@@ -23,7 +23,14 @@ Keychain or Windows Credential Manager through an authenticated loopback helper.
 - Google works without a key. OpenAI-compatible presets require their own key,
   endpoint/model configuration, and provider availability.
 - The UI toggle localizes only the translator panel.
-- To save a screenshot in every supported language, enter a screenshot number
+- Batch screenshots are an opt-in workstation feature. The button and number
+  field are hidden unless a `.enable-screenshot-batches` marker file exists in
+  the translator's local data directory. On macOS this is
+  `~/Library/Application Support/VN Revival/TiTS Translator/`; on Windows it is
+  `%LOCALAPPDATA%\VN Revival\TiTS Translator\`. The marker is not included in
+  shared packages. Restart the translator after changing the marker. This is
+  an accidental-use guard, not a security boundary.
+- When enabled, to save a screenshot in every supported language, enter a screenshot number
   (1–999) and click `Capture all languages`. Keep the game on the same game
   screen until the batch finishes; switching to another app does not cancel
   the capture. The screenshots folder opens when

@@ -638,6 +638,9 @@
     const screenshotRow = shadow.querySelector(".screenshotBatchRow");
     const screenshotButton = shadow.querySelector(".screenshotBatch");
     const screenshotNumber = shadow.querySelector(".screenshotNumber");
+    for (let attempt = 0; attempt < 20 && screenshotRow.hidden; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
     const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
     change(provider, "google");
     change(language, "en");

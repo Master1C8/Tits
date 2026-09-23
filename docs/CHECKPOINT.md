@@ -107,6 +107,12 @@ Shared technical evidence:
   before the dry-run because the running SiteForMods revision `f848c32804c4`
   differs from local `main` `e836bdc3ea3f`. No production deployment was
   authorized or performed, and no Model usage write was made.
+- Screenshot batching now requires a per-installation `.enable-screenshot-batches`
+  marker in the local service data directory. Without it, the batch controls
+  remain hidden and screenshot helper routes reject requests. The marker is
+  intentionally not packaged; this is an accidental-use guard, not hardware
+  binding or an authentication mechanism. The marker is enabled on this Mac;
+  the full test suite and app-only signed macOS build passed on 2026-09-24.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|

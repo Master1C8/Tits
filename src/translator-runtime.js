@@ -113,6 +113,7 @@
   let settings = loadSettings();
   let running = false;
   let screenshotBatchRunning = false;
+  let screenshotBatchesEnabled = false;
   let abortController = null;
   let selfMutation = false;
   let scanTimer = 0;
@@ -1581,7 +1582,10 @@
 
   async function captureAllLanguages() {
     const text = interfacePreset();
-    if (!LOCAL_BRIDGE || screenshotBatchRunning || running) {
+    if (!LOCAL_BRIDGE || !screenshotBatchesEnabled) {
+      return { outcome: "disabled", captured: 0 };
+    }
+    if (screenshotBatchRunning || running) {
       setStatus(text.screenshotBusy);
       return { outcome: "busy", captured: 0 };
     }
@@ -1659,7 +1663,7 @@
       saveSettings();
       screenshotBatchRunning = false;
       for (const [control, wasDisabled] of disabled) control.disabled = wasDisabled;
-      screenshotBatchButton.disabled = !LOCAL_BRIDGE;
+      screenshotBatchButton.disabled = !screenshotBatchesEnabled;
       syncTranslateTrigger();
       if (settings.autoTranslate) scheduleAutoTranslation(50);
     }
@@ -1862,6 +1866,7 @@
   const mainButton = shadow.querySelector(".translate");
   const mainButtonAction = shadow.querySelector(".translateAction");
   const retryButton = shadow.querySelector(".retry");
+  const screenshotBatchRow = shadow.querySelector(".screenshotBatchRow");
   const screenshotBatchButton = shadow.querySelector(".screenshotBatch");
   const screenshotNumberInput = shadow.querySelector(".screenshotNumber");
   const statusElement = shadow.querySelector(".status");
@@ -2020,7 +2025,7 @@
     const localized = text === "Cancel" ? preset.cancel : preset.translate;
     mainButtonAction.textContent = localized;
     mainButton.setAttribute("aria-label", `${localized} (Ctrl+Shift+T)`);
-    screenshotBatchButton.disabled = screenshotBatchRunning || running || !LOCAL_BRIDGE;
+    screenshotBatchButton.disabled = screenshotBatchRunning || running || !screenshotBatchesEnabled;
   }
   function syncTranslateTrigger() {
     mainButton.hidden = autoCheckbox.checked;
@@ -2301,6 +2306,13 @@
   updateProviderHint();
   applyInterfacePreset();
   refreshCacheStats();
+  if (LOCAL_BRIDGE) {
+    void requestLocalHelper("/v1/health").then((status) => {
+      screenshotBatchesEnabled = status.screenshotBatchesEnabled === true;
+      screenshotBatchRow.hidden = !screenshotBatchesEnabled;
+      screenshotBatchButton.disabled = !screenshotBatchesEnabled || screenshotBatchRunning || running;
+    }).catch(() => {});
+  }
 
   mainButton.addEventListener("click", () => translateScreen(true));
   retryButton.addEventListener("click", retryFailed);

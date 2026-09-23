@@ -140,6 +140,7 @@ class LocalServiceTests(unittest.TestCase):
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZbXcAAAAASUVORK5CYII="
         )
         with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / local_service.SCREENSHOT_BATCH_OPT_IN).touch()
             bridge = local_service.LocalServiceBridge(
                 Path(directory), credential_id="coc2", credential_store=FakeCredentialStore(),
                 cdp_port=9317, target_title_hint="CoC2"
@@ -175,6 +176,7 @@ class LocalServiceTests(unittest.TestCase):
 
     def test_screenshot_batch_rejects_untrusted_names_and_missing_cdp(self):
         with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / local_service.SCREENSHOT_BATCH_OPT_IN).touch()
             bridge = self.bridge(directory)
             for batch_id, locale, screenshot_number, sequence, total in (
                 ("../escape", "ru", 1, 1, 1), ("a" * 32, "../../escape", 1, 1, 1),
@@ -200,6 +202,7 @@ class LocalServiceTests(unittest.TestCase):
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZbXcAAAAASUVORK5CYII="
         )
         with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / local_service.SCREENSHOT_BATCH_OPT_IN).touch()
             bridge = self.bridge(directory)
             with mock.patch.object(bridge, "_screenshot_target_url",
                                    return_value="ws://127.0.0.1:9317/devtools/page/game"), \
@@ -213,6 +216,17 @@ class LocalServiceTests(unittest.TestCase):
             self.assertEqual(finished["automatedResult"], "pass")
             manifest = json.loads((Path(result["directory"]) / "screenshots-evidence.json").read_text())
             self.assertEqual([entry["locale"] for entry in manifest["screenshots"]], locales)
+
+    def test_screenshot_batch_requires_local_opt_in(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = self.bridge(directory)
+            self.assertFalse(bridge.screenshot_batches_enabled())
+            with self.assertRaises(local_service.BridgeError) as caught:
+                bridge.capture_screenshot("a" * 32, "en", 1, 1, 1, "0.1.3", "0.9.165")
+            self.assertEqual(caught.exception.code, "screenshots_disabled")
+            self.assertFalse(bridge.screenshots_path.exists())
+            (Path(directory) / local_service.SCREENSHOT_BATCH_OPT_IN).touch()
+            self.assertTrue(bridge.screenshot_batches_enabled())
 
     def test_incomplete_translation_is_rejected_with_usage_for_every_protocol(self):
         cases = [

@@ -73,6 +73,7 @@ MAX_TEXT_CHARS = 12_000
 MAX_LOG_COPY_BYTES = 2 * 1024 * 1024
 MAX_CAPTURE_BYTES = 8 * 1024 * 1024
 MAX_SCREENSHOT_BYTES = 32 * 1024 * 1024
+SCREENSHOT_BATCH_OPT_IN = ".enable-screenshot-batches"
 _LOG_LOCK = threading.Lock()
 _CAPTURE_LOCK = threading.Lock()
 _SCREENSHOT_LOCK = threading.Lock()
@@ -1642,6 +1643,14 @@ class LocalServiceBridge:
     def screenshots_path(self) -> Path:
         return self.data_dir / "screenshots"
 
+    def screenshot_batches_enabled(self) -> bool:
+        # A per-installation opt-in, deliberately not bundled with the app.
+        return (self.data_dir / SCREENSHOT_BATCH_OPT_IN).is_file()
+
+    def _require_screenshot_batches_enabled(self) -> None:
+        if not self.screenshot_batches_enabled():
+            raise BridgeError("screenshots_disabled", "Screenshot batches are disabled on this installation", 403)
+
     @staticmethod
     def _write_screenshot_manifest(directory: Path, document: dict[str, Any]) -> None:
         destination = directory / "screenshots-evidence.json"
@@ -1660,6 +1669,7 @@ class LocalServiceBridge:
         self, batch_id: Any, locale: Any, screenshot_number: Any, sequence: Any, total: Any,
         translator_version: Any, game_version: Any,
     ) -> dict[str, Any]:
+        self._require_screenshot_batches_enabled()
         if not isinstance(batch_id, str) or not re.fullmatch(r"[0-9a-f]{32}", batch_id):
             raise BridgeError("screenshot_request_invalid", "Invalid screenshot batch", 400)
         if not isinstance(locale, str) or not re.fullmatch(r"[a-z]{2,3}(?:-[A-Z]{2}|-[0-9]{3})?", locale):
@@ -1766,6 +1776,7 @@ class LocalServiceBridge:
         self, batch_id: Any, outcome: Any, captured: Any, expected: Any, settings_restored: Any,
         failed_locale: Any = "", failure_code: Any = "",
     ) -> dict[str, Any]:
+        self._require_screenshot_batches_enabled()
         if not isinstance(batch_id, str) or not re.fullmatch(r"[0-9a-f]{32}", batch_id) \
                 or outcome not in ("complete", "failed", "cancelled") \
                 or type(captured) is not int or type(expected) is not int \
@@ -1803,6 +1814,7 @@ class LocalServiceBridge:
                     "expected": expected, "automatedResult": automated_result}
 
     def open_screenshot_batch(self, batch_id: Any) -> dict[str, Any]:
+        self._require_screenshot_batches_enabled()
         if not isinstance(batch_id, str) or not re.fullmatch(r"[0-9a-f]{32}", batch_id):
             raise BridgeError("screenshot_request_invalid", "Invalid screenshot batch", 400)
         directory = self._screenshot_batches.get(batch_id)
@@ -1904,7 +1916,8 @@ class LocalServiceRequestHandler(BaseHTTPRequestHandler):
             self._require_auth()
             if self.path != "/v1/health":
                 raise BridgeError("not_found", "Unknown endpoint", 404)
-            self._write_json({"ok": True, "service": "vnrevival-local"})
+            self._write_json({"ok": True, "service": "vnrevival-local",
+                              "screenshotBatchesEnabled": self.bridge.screenshot_batches_enabled()})
         except BridgeError as error:
             payload: dict[str, Any] = {"ok": False, "error": error.code, "message": str(error)}
             if error.provider_status is not None:

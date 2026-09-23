@@ -97,6 +97,9 @@ window.fetch = async function (input, options = {}) {
   const url = new URL(String(input));
   if (url.hostname === "127.0.0.1") {
     window.localHelperCalls.push(url.pathname);
+    if (url.pathname === "/v1/health") {
+      return { ok: true, json: async () => ({ ok: true, service: "vnrevival-local", screenshotBatchesEnabled: true }) };
+    }
     if (url.pathname === "/v1/vnrevival/translation-config") {
       const request = JSON.parse(options.body);
       return { ok: true, json: async () => ({
