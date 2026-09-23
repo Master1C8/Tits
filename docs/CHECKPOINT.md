@@ -14,12 +14,12 @@ Shared technical evidence:
 
 - Full suite: `./scripts/test-tits.sh --quiet` passed on 2026-09-23 (38 Node
   checks, 69 Python checks, browser smoke, 31-language source verification).
-- macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.1.zip`,
-  385,305 bytes, SHA-256
-  `918348712f6bb4399779d2b952244f88785dd4a48426a04d6e21e375f211e2e6`.
-- Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.1.zip`,
-  11,458,624 bytes, SHA-256
-  `04e533622db97ba2cc6044e1a371e08040a8e4031bded2e740e997c765ddedfc`.
+- macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.2.zip`,
+  385,304 bytes, SHA-256
+  `d2ff4386a7dc97b2d88fadffa0270bb35ae9d6bd674329e2b23417d1a2b9c941`.
+- Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.2.zip`,
+  11,458,629 bytes, SHA-256
+  `b8378629f65821e89892a1205c4d490dc1429de8893d5c4458453fb6914dda91`.
 - `./scripts/build-tits.sh` passed archive checksum, universal macOS controller,
   Windows PE32+ x86-64, signing-integrity, package-content, and product gates.
 - Official game archive inspection passed. A clean real macOS launch, local
@@ -44,6 +44,12 @@ Shared technical evidence:
   labels; story text, tooltips, other controls, and other locales retain their
   provider output. Browser smoke and adapter checks passed; the updated build
   has not yet been reinstalled into the live game.
+- Version `0.1.2` restores the visible `Capture all languages` button and
+  screenshot-number field. The browser smoke test confirms the control is
+  visible and enabled and the existing 31-language batch restores settings,
+  finalizes evidence, and opens the screenshots folder. The full test suite
+  and macOS/Windows package verification passed. The new packages have not
+  yet been reinstalled into the live game.
 - The measured 2026-09-23 model-usage snapshot is recorded in
   `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
   sync is pending: the guarded site CLI stopped before dry-run because the

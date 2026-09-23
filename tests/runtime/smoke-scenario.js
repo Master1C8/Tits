@@ -635,12 +635,20 @@
     const api = window.__vnRevivalTranslator;
     const provider = shadow.querySelector(".provider");
     const language = shadow.querySelector(".language");
+    const screenshotRow = shadow.querySelector(".screenshotBatchRow");
+    const screenshotButton = shadow.querySelector(".screenshotBatch");
     const screenshotNumber = shadow.querySelector(".screenshotNumber");
     const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
     change(provider, "google");
     change(language, "en");
     autoCheckbox.checked = false;
     autoCheckbox.dispatchEvent(new Event("change"));
+    const screenshotActionVisible = !screenshotRow.hidden
+      && getComputedStyle(screenshotRow).display === "grid"
+      && screenshotRow.getBoundingClientRect().height > 0
+      && screenshotButton.getBoundingClientRect().height > 0
+      && screenshotNumber.getBoundingClientRect().height > 0
+      && !screenshotButton.disabled;
     screenshotNumber.value = "7";
     const before = api.settings();
     window.smokeScreenshotRequests.length = 0;
@@ -652,6 +660,7 @@
     const batchIds = new Set(window.smokeScreenshotRequests.map((request) => request.batchId));
     const after = api.settings();
     return {
+      screenshotActionVisible,
       screenshotBatchCompletes: result.outcome === "complete" && result.captured === 31,
       screenshotLocalesCanonical: JSON.stringify(capturedLocales) === JSON.stringify(expectedLocales),
       screenshotFramesLabelled: window.smokeScreenshotRequests.every((request, index) => request.sequence === index + 1

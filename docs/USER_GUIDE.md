@@ -23,6 +23,11 @@ Keychain or Windows Credential Manager through an authenticated loopback helper.
 - Google works without a key. OpenAI-compatible presets require their own key,
   endpoint/model configuration, and provider availability.
 - The UI toggle localizes only the translator panel.
+- To save a screenshot in every supported language, enter a screenshot number
+  (1–999) and click `Capture all languages`. Keep the game on the screen you
+  want to capture until the batch finishes; the screenshots folder opens when
+  complete. The translator restores your previous language and auto-translate
+  setting afterward. The helper must be running for this control to be enabled.
 - Clear cache and log removes translator cache/log data without touching saves.
 
 When English is selected, the translator shows the original and sends no
