@@ -1,6 +1,6 @@
 # Current localization status
 
-Date: 2026-09-23
+Date: 2026-09-24
 Game: Trials in Tainted Space public `0.9.165`
 Checkout: `/Users/antonkrutov/Desktop/Tits`
 Delivery type: real-time translation
@@ -94,6 +94,12 @@ Shared technical evidence:
   uses a bounded timer when backgrounded Chromium suspends animation frames.
   Browser regression simulates focus loss before `id` and completes 31/31;
   live recapture and visual review are pending. The partial batch is preserved.
+- The translator build now uses the official TiTS public 0.9.165 macOS app icon
+  for both macOS and Windows. The exact `icon.icns` was extracted from the
+  checksum-verified official archive; its 512 px image supplies the Windows
+  icon. The full suite, app-only macOS build, macOS code-signature verification,
+  and unpacked Windows build passed on 2026-09-24. The existing release archives
+  were not rebuilt; no game executable or other game payload is bundled.
 - The measured 2026-09-23 model-usage snapshot through 16:16:16 UTC is recorded
   in `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`:
   117,603,671 total tokens in 11 nonoverlapping records. Production sync is

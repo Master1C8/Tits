@@ -20,8 +20,8 @@
   "macGameExecutable": "TiTS",
   "dataDirectory": "VN Revival/TiTS Translator",
   "bundleIdentifier": "fun.vnrevival.tits.translator",
-  "iconPng": "assets/icon-1024.png",
-  "iconIcns": "assets/AppIcon.icns",
+  "iconPng": "assets/tits-game-icon-512.png",
+  "iconIcns": "assets/tits-game-icon.icns",
   "archivePrefix": "TiTS-Translator",
   "windowsDistributionName": "TiTS Translator Windows",
   "theme": {
