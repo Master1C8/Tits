@@ -86,11 +86,13 @@ Shared technical evidence:
   in failed batch manifests. Full automated tests pass; no live recapture or
   visual pass has been performed for these changes. Long scrollable content and
   artwork behind the game's fixed action bar remain viewport limitations.
-- The measured 2026-09-23 model-usage snapshot is recorded in
-  `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
-  sync is pending: the guarded site CLI stopped before dry-run because the
-  running SiteForMods revision differs from local `main` and requires a separate
-  owner-authorized production deployment.
+- The measured 2026-09-23 model-usage snapshot through 16:16:16 UTC is recorded
+  in `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`:
+  117,603,671 total tokens in 11 nonoverlapping records. Production sync is
+  pending. The guarded site CLI verified the manifest transfer but stopped
+  before the dry-run because the running SiteForMods revision `f848c32804c4`
+  differs from local `main` `e836bdc3ea3f`. No production deployment was
+  authorized or performed, and no Model usage write was made.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|

@@ -89,6 +89,58 @@
       "outputTokens": 490,
       "reasoningTokens": 270,
       "notes": "Measured platform review overhead; this internal model has no verified public API rate."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "application",
+      "task": "TiTS screenshot batching and runtime fixes",
+      "model": "gpt-6-sol",
+      "provider": "OpenAI Codex",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row A3; Codex session 01a0cd23-2a60-7a70-b896-19684334fb19 cumulative delta",
+      "inputTokens": 11716233,
+      "cachedInputTokens": 11557632,
+      "outputTokens": 43132,
+      "reasoningTokens": 22174,
+      "notes": "Includes inseparable screenshot engineering, app runtime checks, and the tail of earlier usage accounting."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "application",
+      "task": "Automated review of TiTS screenshot engineering",
+      "model": "codex-auto-review",
+      "provider": "Codex Desktop internal",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row A4; Codex guardian sessions 01a0cdb5 and 01a0cdc6 cumulative deltas",
+      "inputTokens": 1016775,
+      "cachedInputTokens": 893696,
+      "outputTokens": 2376,
+      "reasoningTokens": 1078,
+      "notes": "Measured platform review overhead; this internal model has no verified public API rate."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "runtime-visual-qa",
+      "task": "TiTS screenshot QA and UI corrections",
+      "model": "gpt-6-sol",
+      "provider": "OpenAI Codex",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row Q3; Codex session 01a0cd23-2a60-7a70-b896-19684334fb19 cumulative delta",
+      "inputTokens": 31102270,
+      "cachedInputTokens": 30011776,
+      "outputTokens": 104918,
+      "reasoningTokens": 53329,
+      "notes": "Includes inseparable screenshot review, app corrections, and screenshot cleanup."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "runtime-visual-qa",
+      "task": "Automated review of TiTS screenshot QA",
+      "model": "codex-auto-review",
+      "provider": "Codex Desktop internal",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row Q4; Codex guardian sessions 01a0ceb0, 01a0cecc, and 01a0cf03 cumulative deltas",
+      "inputTokens": 1107412,
+      "cachedInputTokens": 941568,
+      "outputTokens": 3101,
+      "reasoningTokens": 1380,
+      "notes": "Measured platform review overhead; this internal model has no verified public API rate."
     }
   ]
 }
