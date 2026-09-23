@@ -147,6 +147,26 @@ class LocalServiceTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "screenshots_unavailable")
             self.assertFalse(bridge.screenshots_path.exists())
 
+    def test_screenshot_batch_accepts_every_catalog_locale_in_mock_capture(self):
+        locales = [entry[0] for entry in json.loads((ROOT / "src/languages.json").read_text(encoding="utf-8"))]
+        image = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZbXcAAAAASUVORK5CYII="
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = self.bridge(directory)
+            with mock.patch.object(bridge, "_screenshot_target_url",
+                                   return_value="ws://127.0.0.1:9317/devtools/page/game"), \
+                    mock.patch.object(local_service, "_capture_cdp_png", return_value=image):
+                for sequence, locale in enumerate(locales, start=1):
+                    result = bridge.capture_screenshot(
+                        "b" * 32, locale, 7, sequence, len(locales), "0.1.3", "0.9.165"
+                    )
+                    self.assertEqual(result["file"], f"{locale}-7-Gameplay.png")
+                finished = bridge.finish_screenshot_batch("b" * 32, "complete", len(locales), len(locales), True)
+            self.assertEqual(finished["automatedResult"], "pass")
+            manifest = json.loads((Path(result["directory"]) / "screenshots-evidence.json").read_text())
+            self.assertEqual([entry["locale"] for entry in manifest["screenshots"]], locales)
+
     def test_incomplete_translation_is_rejected_with_usage_for_every_protocol(self):
         cases = [
             ("custom", "test", {"choices": [{"finish_reason": "length",
@@ -358,6 +378,17 @@ class LocalServiceTests(unittest.TestCase):
                             self.assertRaises(local_service.BridgeError):
                         bridge.site_translation_config(game_slug, locale)
                 urlopen.assert_not_called()
+
+    def test_site_translation_config_accepts_numeric_region_locale(self):
+        payload = {"total": 1, "entries": [
+            {"id": "one", "term": "Champion", "translation": {"term": "Campeón"}},
+        ]}
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = self.bridge(directory)
+            with mock.patch.object(local_service, "open_url", return_value=FakeHTTPResponse(payload)) as urlopen:
+                result = bridge.site_translation_config("trials-in-tainted-space", "es-419")
+            self.assertEqual(result["source"], "vnrevival")
+            self.assertIn("locale=es-419", urlopen.call_args.args[0].full_url)
 
     def test_credentials_are_scoped_to_the_endpoint(self):
         left = local_service.OpenAICompatibleCredentialStore("coc2", "https://one.example/v1")

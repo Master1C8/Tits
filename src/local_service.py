@@ -831,7 +831,7 @@ class LocalServiceBridge:
     def site_translation_config(self, game_slug: Any, locale: Any) -> dict[str, Any]:
         if not isinstance(game_slug, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,99}", game_slug):
             raise BridgeError("site_config_invalid", "The VN Revival game identifier is invalid", 400)
-        if not isinstance(locale, str) or not re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z]{2,4})?", locale):
+        if not isinstance(locale, str) or not re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z]{2,4}|-[0-9]{3})?", locale):
             raise BridgeError("site_config_invalid", "The VN Revival locale is invalid", 400)
 
         query = urllib.parse.urlencode({"locale": locale, "offset": 0, "limit": 1000})
@@ -1305,7 +1305,7 @@ class LocalServiceBridge:
                            source_id=fingerprint(text), config_id=fingerprint([target, model, preset, base_url, system_prompt, model_parameters]),
                            model=model if isinstance(model, str) and model in known_models else "custom",
                            model_id=fingerprint(model), preset=preset if isinstance(preset, str) and preset in OPENAI_COMPATIBLE_PRESETS else "invalid",
-                           target=target if isinstance(target, str) and re.fullmatch(r"[a-z]{2,3}(?:-[A-Za-z]{2,4})?", target) else "other",
+                           target=target if isinstance(target, str) and re.fullmatch(r"[a-z]{2,3}(?:-[A-Za-z]{2,4}|-[0-9]{3})?", target) else "other",
                            source_chars=len(text) if isinstance(text, str) else 0,
                            prompt_chars=len(system_prompt) if isinstance(system_prompt, str) else len(OPENAI_COMPATIBLE_DEFAULT_SYSTEM_PROMPT))
             result = self._translate(target, target_name, text, model, preset, base_url, system_prompt, model_parameters)
@@ -1630,7 +1630,7 @@ class LocalServiceBridge:
     ) -> dict[str, Any]:
         if not isinstance(batch_id, str) or not re.fullmatch(r"[0-9a-f]{32}", batch_id):
             raise BridgeError("screenshot_request_invalid", "Invalid screenshot batch", 400)
-        if not isinstance(locale, str) or not re.fullmatch(r"[a-z]{2,3}(?:-[A-Z]{2})?", locale):
+        if not isinstance(locale, str) or not re.fullmatch(r"[a-z]{2,3}(?:-[A-Z]{2}|-[0-9]{3})?", locale):
             raise BridgeError("screenshot_request_invalid", "Invalid screenshot locale", 400)
         if type(screenshot_number) is not int or not 1 <= screenshot_number <= 999:
             raise BridgeError("screenshot_request_invalid", "Invalid screenshot number", 400)
