@@ -343,8 +343,17 @@ def _capture_cdp_png(websocket_url: str) -> bytes:
                 raise BridgeError("screenshot_connection_failed", "The game screenshot handshake was rejected", 502)
             if remainder:
                 raise BridgeError("screenshot_protocol_failed", "The game returned an invalid screenshot handshake", 502)
+            # Neutralize a lingering hover highlight before recording evidence.
+            pointer = json.dumps({
+                "id": 1, "method": "Input.dispatchMouseEvent",
+                "params": {"type": "mouseMoved", "x": 1, "y": 1},
+            }, separators=(",", ":")).encode("utf-8")
+            _send_websocket_frame(connection, 0x1, pointer)
+            pointer_response = json.loads(_receive_websocket_message(connection).decode("utf-8"))
+            if pointer_response.get("id") != 1 or "error" in pointer_response:
+                raise BridgeError("screenshot_capture_failed", "Could not clear the game hover state", 502)
             command = json.dumps({
-                "id": 1,
+                "id": 2,
                 "method": "Page.captureScreenshot",
                 "params": {"format": "png", "fromSurface": True, "captureBeyondViewport": False},
             }, separators=(",", ":")).encode("utf-8")
@@ -354,7 +363,7 @@ def _capture_cdp_png(websocket_url: str) -> bytes:
         raise
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
         raise BridgeError("screenshot_connection_failed", "Could not capture the game screenshot", 502) from error
-    if response_payload.get("id") != 1 or "error" in response_payload:
+    if response_payload.get("id") != 2 or "error" in response_payload:
         raise BridgeError("screenshot_capture_failed", "The game rejected the screenshot request", 502)
     encoded = response_payload.get("result", {}).get("data")
     try:
@@ -1221,7 +1230,12 @@ class LocalServiceBridge:
     @staticmethod
     def _completion_content(payload: dict[str, Any]) -> str:
         try:
-            content = payload["choices"][0]["message"]["content"]
+            message = payload["choices"][0]["message"]
+            if isinstance(message, dict) and message.get("refusal"):
+                raise BridgeError("openai_refused_translation", "The provider declined to translate this passage", 422)
+            content = message["content"]
+        except BridgeError:
+            raise
         except (KeyError, IndexError, TypeError) as error:
             raise BridgeError("openai_invalid_response", "The provider returned an invalid completion", 502) from error
         if isinstance(content, str):
@@ -1237,6 +1251,14 @@ class LocalServiceBridge:
 
     @staticmethod
     def _response_content(payload: dict[str, Any]) -> str:
+        output = payload.get("output")
+        if isinstance(output, list):
+            for item in output:
+                content = item.get("content") if isinstance(item, dict) else None
+                if isinstance(content, list) and any(
+                    isinstance(part, dict) and part.get("type") == "refusal" for part in content
+                ):
+                    raise BridgeError("openai_refused_translation", "The provider declined to translate this passage", 422)
         direct = payload.get("output_text")
         if isinstance(direct, str):
             return direct.strip()
@@ -1262,6 +1284,8 @@ class LocalServiceBridge:
         content = payload.get("content")
         if not isinstance(content, list):
             raise BridgeError("openai_invalid_response", "The provider returned an invalid message", 502)
+        if any(isinstance(item, dict) and item.get("type") == "refusal" for item in content):
+            raise BridgeError("openai_refused_translation", "The provider declined to translate this passage", 422)
         return "".join(
             item["text"] for item in content
             if isinstance(item, dict) and item.get("type") == "text"
@@ -1274,15 +1298,23 @@ class LocalServiceBridge:
         fence = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", candidate, re.I | re.S)
         if fence:
             candidate = fence.group(1).strip()
+        refusal = r"^(?:i (?:cannot|can't|can not|won't|am unable to)|sorry,? i (?:cannot|can't)|n\u00e3o posso|nao posso|no puedo|je ne peux pas|ich kann (?:nicht|keine)|\u044f \u043d\u0435 \u043c\u043e\u0433\u0443)\s+(?:help\b|translate\b|traduzir\b|traducir\b|traduire\b|\u00fcbersetzen\b|\u043f\u0435\u0440\u0435\u0432\u0435\u0441\u0442\u0438\b|\u043f\u0435\u0440\u0435\u0432\u043e\u0434\u0438\u0442\u044c\b)"
+        def refused(value: str) -> bool:
+            return any(re.search(refusal, part.strip(), re.I)
+                       for part in re.split(r"\bVRCTXSEP\d+X\b", value))
         try:
             parsed = json.loads(candidate)
         except json.JSONDecodeError as error:
             if candidate.startswith(("{", "[")):
                 raise BridgeError("openai_invalid_response", "The provider returned invalid structured output", 502) from error
+            if refused(candidate):
+                raise BridgeError("openai_refused_translation", "The provider declined to translate this passage", 422)
             return candidate
         translation = parsed.get("translation") if isinstance(parsed, dict) else parsed if isinstance(parsed, str) else None
         if not isinstance(translation, str):
             raise BridgeError("openai_invalid_response", "The provider returned invalid structured output", 502)
+        if refused(translation):
+            raise BridgeError("openai_refused_translation", "The provider declined to translate this passage", 422)
         return translation
 
     @staticmethod

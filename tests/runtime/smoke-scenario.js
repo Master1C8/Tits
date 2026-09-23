@@ -654,7 +654,22 @@
     window.smokeScreenshotRequests.length = 0;
     window.smokeScreenshotFinishRequests.length = 0;
     window.smokeScreenshotOpenRequests.length = 0;
-    const result = await api.captureAllLanguages();
+    const textPane = document.createElement("div");
+    textPane.className = "mainTextContainer";
+    textPane.style.cssText = "position:fixed;left:-1000px;top:0;height:100px;width:100px;overflow:auto";
+    const filler = document.createElement("div");
+    filler.style.height = "400px";
+    textPane.append(filler);
+    document.body.append(textPane);
+    textPane.scrollTop = 80;
+    let result;
+    let scrollRestored;
+    try {
+      result = await api.captureAllLanguages();
+      scrollRestored = textPane.scrollTop === 80;
+    } finally {
+      textPane.remove();
+    }
     const expectedLocales = languageOptions.map(([code]) => code);
     const capturedLocales = window.smokeScreenshotRequests.map((request) => request.locale);
     const batchIds = new Set(window.smokeScreenshotRequests.map((request) => request.batchId));
@@ -663,8 +678,9 @@
       screenshotActionVisible,
       screenshotBatchCompletes: result.outcome === "complete" && result.captured === 31,
       screenshotLocalesCanonical: JSON.stringify(capturedLocales) === JSON.stringify(expectedLocales),
-      screenshotFramesLabelled: window.smokeScreenshotRequests.every((request, index) => request.sequence === index + 1
-        && request.panelHidden && request.visibleLocale === request.locale),
+      screenshotFramesUnannotated: window.smokeScreenshotRequests.every((request, index) => request.sequence === index + 1
+        && request.panelHidden && request.visibleLocale === ""),
+      screenshotTextPaneStable: scrollRestored && window.smokeScreenshotRequests.every((request) => request.textPaneScroll === 0),
       screenshotNumberShared: result.screenshotNumber === 7
         && window.smokeScreenshotRequests.every((request) => request.screenshotNumber === 7),
       screenshotBatchIdentityStable: batchIds.size === 1 && batchIds.has(result.batchId),
@@ -772,9 +788,47 @@
     }
   })();
 
+  const trayButtonBadgeClearance = await (async () => {
+    const tray = document.createElement("div");
+    tray.className = "buttonTrayElementContainer";
+    tray.style.cssText = "position:fixed;top:120px;left:20px;width:170px";
+    const button = document.createElement("button");
+    button.className = "button";
+    button.style.cssText = "width:100%;height:38px;font-size:18px;text-align:center";
+    const label = document.createElement("span");
+    label.className = "btnTxt";
+    label.style.cssText = "display:inline-block;white-space:nowrap;max-width:12em";
+    label.textContent = "LONG BUTTON LABEL PROBE";
+    button.append(label);
+    const badge = document.createElement("div");
+    badge.className = "keybindDisplay";
+    badge.style.cssText = "position:absolute;top:0;left:0;width:20px;height:20px";
+    tray.append(button, badge);
+    document.body.append(tray);
+    window.smokeCache.set("v3\ntits\ngoogle\nru\nLONG BUTTON LABEL PROBE", "Очень длинная надпись кнопки");
+    const language = shadow.querySelector(".language");
+    language.value = "ru";
+    language.dispatchEvent(new Event("change"));
+    window.__vnRevivalTranslator.showTranslations();
+    try {
+      await window.__vnRevivalTranslator.translateScreen();
+      const wrapped = label.textContent === "Очень длинная надпись кнопки"
+        && getComputedStyle(label).whiteSpace === "normal"
+        && label.getBoundingClientRect().left >= badge.getBoundingClientRect().right;
+      window.__vnRevivalTranslator.showOriginal();
+      return wrapped && label.textContent === "LONG BUTTON LABEL PROBE"
+        && getComputedStyle(label).whiteSpace === "nowrap";
+    } finally {
+      tray.remove();
+      language.value = "en";
+      language.dispatchEvent(new Event("change"));
+    }
+  })();
+
   // Keep each expectation once; the reporter lists failed names only.
   window.smokeReport({
     translatedStatBarFits,
+    trayButtonBadgeClearance,
     hebrewSpeciesChoiceLabel,
     randomUUIDFallback: window.smokeRandomUUIDUnavailable === true,
     abortSignalFallback: window.smokeThrowIfAbortedUnavailable === true,

@@ -37,6 +37,38 @@ test("Hebrew species choice labels use Hebrew script without changing other cont
   assert.equal(adapter.normalizeControlTranslation("Human", "אנושי", "he"), "אנושי");
 });
 
+test("compact stat abbreviations stay stable instead of becoming misleading translations", () => {
+  const statNode = { parentElement: { matches: (selector) => selector === ".statBarContainer > .statText" } };
+  for (const label of ["PHY", "REF", "AIM", "INT", "WIL", "LIB"]) {
+    assert.equal(adapter.normalizeTranslation(label, "wrong label", "ru", statNode), label);
+  }
+  assert.equal(adapter.normalizeTranslation("REF", "Référence", "fr", { parentElement: { matches: () => false } }), "Référence");
+});
+
+test("tray button labels get scoped wrapping and badge clearance", () => {
+  const created = [];
+  const previousDocument = global.document;
+  global.document = {
+    getElementById: () => null,
+    createElement: () => ({}),
+    head: { appendChild: (node) => created.push(node) }
+  };
+  const element = {
+    matches: (selector) => selector === ".buttonTrayElementContainer .button",
+    querySelector: () => ({}),
+  };
+  try {
+    adapter.formatTranslatedElement(element, {});
+    assert.equal(created.length, 1);
+    assert.match(created[0].textContent, /max-width: calc\(100% - 2\.5em\)/);
+    assert.match(created[0].textContent, /white-space: normal/);
+    assert.match(created[0].textContent, /data-vnrevival-translated/);
+  } finally {
+    if (previousDocument === undefined) delete global.document;
+    else global.document = previousDocument;
+  }
+});
+
 test("translated stat labels reserve room for values and shrink before clipping", () => {
   const properties = new Map();
   const label = {

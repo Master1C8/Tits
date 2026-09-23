@@ -701,7 +701,7 @@
           context.metrics.helper_requests += 1;
           if (context.batchSize > 1) context.metrics.batch_requests += 1;
         }
-        return await selectedProvider.translateChunk({
+        const translated = await selectedProvider.translateChunk({
           text, language, sourceLanguage: SOURCE_LANGUAGE, signal,
           metrics: context.metrics || null,
           openAICompatible: providerUsesOpenAICompatible(provider) ? (context.connection || connectionForSource(text)) : null,
@@ -715,6 +715,12 @@
           }),
           decodeHtmlEntities
         });
+        if (providerUsesOpenAICompatible(provider) && core.isProviderRefusal(translated)) {
+          const refusal = new Error("The provider declined to translate this passage");
+          refusal.code = "openai_refused_translation";
+          throw refusal;
+        }
+        return translated;
       } catch (error) {
         if (error && error.name === "AbortError") throw error;
         lastError = error;
@@ -736,6 +742,11 @@
       providerCacheVariant(provider, connectionForSource(source, connection)));
   }
 
+  function hasRefusalFragment(value) {
+    if (core.isProviderRefusal(value)) return true;
+    return String(value || "").split(/\bVRCTXSEP\d+X\b/i).some(core.isProviderRefusal);
+  }
+
   async function translateText(source, language, provider, signal, onRetry, context = {}) {
     const connection = connectionForSource(source, context.connection);
     const key = translationCacheKey(source, language, provider, connection);
@@ -748,6 +759,12 @@
       }
     }
     if (cached) {
+      if (providerUsesOpenAICompatible(provider) && hasRefusalFragment(cached)) {
+        await cacheDelete(key);
+        const refusal = new Error("A cached provider refusal is not game text");
+        refusal.code = "openai_refused_translation";
+        throw refusal;
+      }
       if (context.metrics) context.metrics.cache_hits += 1;
       return { text: cached, cached: true };
     }
@@ -760,6 +777,11 @@
       await sleep(providerRequestDelay(provider), signal);
     }
     const translated = parts.join(" ").replace(/ +\n/g, "\n").trim();
+    if (providerUsesOpenAICompatible(provider) && hasRefusalFragment(translated)) {
+      const refusal = new Error("The provider declined to translate this passage");
+      refusal.code = "openai_refused_translation";
+      throw refusal;
+    }
     if (translated) await cachePut(key, translated);
     return { text: translated, cached: false };
   }
@@ -882,6 +904,7 @@
   function presentationContainerForNode(node) {
     let element = node && node.parentElement;
     const fallback = element;
+    if (element?.matches(".buttonTrayElementContainer .button > .btnTxt")) return element.parentElement;
     if (element && element.matches("option,optgroup")) return element.closest("select") || element;
     while (element && element !== document.body && element !== document.documentElement) {
       if (element.matches("button,a,[role='button'],[role='link'],li,p")) return element;
@@ -1053,6 +1076,9 @@
       context.deferred.push([node, source, translation, language, provider, context, dependencySource]);
       return;
     }
+    if (typeof adapter.normalizeTranslation === "function") {
+      translation = adapter.normalizeTranslation(source, translation, language, node);
+    }
     if (classifyNode(node) === "control" && typeof adapter.normalizeControlTranslation === "function") {
       translation = adapter.normalizeControlTranslation(source, translation, language);
     }
@@ -1202,6 +1228,12 @@
       throwIfAborted(signal);
       const key = translationCacheKey(part.source, language, provider, context.connection);
       const cached = await cacheGet(key);
+      if (cached && providerUsesOpenAICompatible(provider) && hasRefusalFragment(cached)) {
+        await cacheDelete(key);
+        const refusal = new Error("A cached provider refusal is not game text");
+        refusal.code = "openai_refused_translation";
+        throw refusal;
+      }
       if (cached && (!part.contextual || core.parseContextTranslation(cached, part.parts.length))) {
         context.metrics.cache_hits += 1;
         applyResolvedTranslation(part, cached, language, provider, context);
@@ -1223,6 +1255,11 @@
         }
       }
       if (parts) {
+        if (parts.some(core.isProviderRefusal)) {
+          const refusal = new Error("The provider declined to translate this passage");
+          refusal.code = "openai_refused_translation";
+          throw refusal;
+        }
         let index = 0;
         for (const part of missing) {
           const count = core.jobTextParts(part).length;
@@ -1422,6 +1459,7 @@
               || lastErrorCode === "openai_key_invalid"
               || lastErrorCode === "openai_model_unavailable"
               || lastErrorCode === "unsafe_redirect" || lastErrorCode === "openai_incomplete_translation"
+              || lastErrorCode === "openai_refused_translation"
               || ["openai_billing_required", "openai_endpoint_mismatch", "openai_stream_required", "openai_message_format_rejected", "openai_reasoning_unsupported"].includes(lastErrorCode)
               || (lastErrorCode === "openai_request_failed" && Number.isInteger(error.providerStatus)
                 && error.providerStatus < 500)) {
@@ -1498,25 +1536,19 @@
   }
 
   async function captureTranslatedScreen(batchId, locale, screenshotNumber, sequence, total, gameVersion) {
-    const badge = document.createElement("div");
-    badge.className = "screenshotLocaleBadge";
-    badge.textContent = locale;
-    badge.style.cssText = [
-      "position:fixed", "left:10px", "top:10px", "z-index:2147483647",
-      "padding:5px 10px", "border:1px solid #d7ad54", "border-radius:7px",
-      "background:#20131ce6", "color:#fff", "font:600 16px/1.2 Arial,sans-serif",
-      "direction:ltr", "pointer-events:none"
-    ].join(";");
+    const textPane = document.querySelector(".mainTextContainer");
+    const previousScroll = textPane?.scrollTop;
     panel.hidden = true;
-    shadow.appendChild(badge);
     try {
+      if (textPane) textPane.scrollTop = textPane.querySelector(".combatOutput")
+        ? textPane.scrollHeight : 0;
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       await waitForPaint();
       return await requestLocalHelper("/v1/screenshots/capture", {
         body: { batchId, locale, screenshotNumber, sequence, total, translatorVersion: VERSION, gameVersion }
       });
     } finally {
-      badge.remove();
+      if (textPane && textPane.isConnected) textPane.scrollTop = previousScroll;
       panel.hidden = false;
       await waitForPaint();
     }
@@ -1944,6 +1976,7 @@
       openai_model_unavailable: "modelUnavailable", openai_billing_required: "billingRequired",
       openai_format_invalid: "formatInvalid", openai_invalid_response: "formatInvalid",
       openai_incomplete_translation: "formatInvalid",
+      openai_refused_translation: "translationRefused",
       openai_empty_translation: "formatInvalid", openai_unavailable: "connectionFailed"
     }[error && error.code];
     if (key) return text[key];

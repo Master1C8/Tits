@@ -8,6 +8,28 @@
     Gryvain: "גריוויין",
     Suula: "סולה"
   });
+  const compactStats = new Set(["PHY", "REF", "AIM", "INT", "WIL", "LIB"]);
+  const trayStyleId = "vnrevival-tits-tray-label-style";
+
+  function ensureTrayLabelStyle() {
+    if (document.getElementById(trayStyleId)) return;
+    const style = document.createElement("style");
+    style.id = trayStyleId;
+    // The game's .btnTxt is nowrap with a fixed em width. Restrict it to the
+    // button interior so long translations cannot paint over the key badge.
+    style.textContent = `
+      .buttonTrayElementContainer .button[data-vnrevival-translated="true"] > .btnTxt {
+        display: block !important;
+        max-width: calc(100% - 2.5em) !important;
+        margin: 0 auto !important;
+        white-space: normal !important;
+        overflow: hidden !important;
+        overflow-wrap: anywhere !important;
+        line-height: 1.1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   function fitTranslatedStatLabel(element, original) {
     if (!element.matches(".statBarContainer > .statText")) return;
@@ -62,6 +84,11 @@
     hasSourceText(value, core) {
       return core.hasEnglishText(value);
     },
+    normalizeTranslation(source, translation, _language, node) {
+      const label = String(source || "").trim();
+      return node?.parentElement?.matches(".statBarContainer > .statText") && compactStats.has(label)
+        ? source : translation;
+    },
     normalizeControlTranslation(source, translation, language) {
       if (language !== "he") return translation;
       const label = String(source || "").trim();
@@ -69,6 +96,9 @@
         ? hebrewControlLabels[label] : translation;
     },
     formatTranslatedElement(element, original) {
+      if (element.matches(".buttonTrayElementContainer .button") && element.querySelector(":scope > .btnTxt")) {
+        ensureTrayLabelStyle();
+      }
       fitTranslatedStatLabel(element, original);
     }
   });

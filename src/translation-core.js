@@ -365,6 +365,10 @@
     return parts[0] === "v3" || parts[0] === "v4" ? (parts[1] || "") : "";
   }
 
+  function isProviderRefusal(value) {
+    return /^(?:i (?:cannot|can't|can not|won't|am unable to)|sorry,? i (?:cannot|can't)|n\u00e3o posso|nao posso|no puedo|je ne peux pas|ich kann (?:nicht|keine)|\u044f \u043d\u0435 \u043c\u043e\u0433\u0443)\s+(?:help\b|translate\b|traduzir\b|traducir\b|traduire\b|\u00fcbersetzen\b|\u043f\u0435\u0440\u0435\u0432\u0435\u0441\u0442\u0438\b|\u043f\u0435\u0440\u0435\u0432\u043e\u0434\u0438\u0442\u044c\b)/iu.test(String(value || "").trim());
+  }
+
   return {
     GOOGLE_MAX_CHARS,
     isRtlLanguage,
@@ -391,6 +395,7 @@
     makeCacheKey,
     cacheKeyLanguage,
     cacheKeyProvider,
-    cacheKeyGame
+    cacheKeyGame,
+    isProviderRefusal
   };
 });

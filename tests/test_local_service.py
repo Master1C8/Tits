@@ -53,6 +53,46 @@ class LocalServiceTests(unittest.TestCase):
             Path(directory), credential_id="coc2", credential_store=FakeCredentialStore(key)
         )
 
+    def test_cdp_capture_clears_hover_before_screenshot(self):
+        image = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZbXcAAAAASUVORK5CYII="
+        )
+        key = base64.b64encode(b"\0" * 16).decode("ascii")
+        accept = base64.b64encode(local_service.hashlib.sha1(
+            (key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode("ascii")
+        ).digest()).decode("ascii")
+
+        class FakeSocket:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def settimeout(self, _seconds):
+                pass
+
+            def sendall(self, _data):
+                pass
+
+            def recv(self, _size):
+                return f"HTTP/1.1 101 Switching Protocols\r\nSec-WebSocket-Accept: {accept}\r\n\r\n".encode("ascii")
+
+        commands = []
+        messages = [
+            json.dumps({"id": 1, "result": {}}).encode("utf-8"),
+            json.dumps({"id": 2, "result": {"data": base64.b64encode(image).decode("ascii")}}).encode("utf-8"),
+        ]
+        with mock.patch.object(local_service.os, "urandom", return_value=b"\0" * 16), \
+                mock.patch.object(local_service.socket, "create_connection", return_value=FakeSocket()), \
+                mock.patch.object(local_service, "_send_websocket_frame",
+                                  side_effect=lambda _socket, _opcode, payload: commands.append(json.loads(payload))), \
+                mock.patch.object(local_service, "_receive_websocket_message", side_effect=messages):
+            self.assertEqual(local_service._capture_cdp_png("ws://127.0.0.1:9317/devtools/page/game"), image)
+        self.assertEqual([command["method"] for command in commands],
+                         ["Input.dispatchMouseEvent", "Page.captureScreenshot"])
+        self.assertEqual(commands[0]["params"], {"type": "mouseMoved", "x": 1, "y": 1})
+
     def test_redirect_transport_checks_destination_before_forwarding_credentials(self):
         build_opener = local_service.urllib.request.build_opener
         destinations = (
@@ -187,6 +227,29 @@ class LocalServiceTests(unittest.TestCase):
                 self.assertEqual(caught.exception.code, "openai_incomplete_translation")
                 self.assertEqual(caught.exception.usage["output_tokens"], 20)
                 self.assertEqual(upstream.call_count, 1)
+
+    def test_refusal_is_rejected_without_becoming_game_text(self):
+        source = "A long source passage describing a scene in the game."
+        cases = [
+            ("custom", "test", {"choices": [{"message": {"content":
+                "Não posso traduzir conteúdo sexual envolvendo menores."}}]}),
+            ("custom", "test", {"choices": [{"message": {"content":
+                "VRCTXSEP0X Não posso traduzir conteúdo sexual envolvendo menores."}}]}),
+            ("custom", "test", {"choices": [{"message": {"content": None,
+                "refusal": "I cannot translate that passage."}}]}),
+            ("opencode-go", sorted(local_service.OPENCODE_RESPONSE_MODELS["opencode-go"])[0],
+                {"output": [{"type": "message", "content": [{"type": "refusal", "refusal": "Declined"}]}]}),
+        ]
+        for preset, model, payload in cases:
+            with self.subTest(preset=preset, payload=payload), tempfile.TemporaryDirectory() as directory:
+                payload["usage"] = {"input_tokens": 10, "output_tokens": 20}
+                bridge = self.bridge(directory, "test-key")
+                with mock.patch.object(local_service, "open_url", return_value=FakeHTTPResponse(payload)):
+                    with self.assertRaises(local_service.BridgeError) as caught:
+                        bridge.openai_translate("pt-BR", "Portuguese (Brazil)", source, model,
+                                                preset, "https://provider.test/v1")
+                self.assertEqual(caught.exception.code, "openai_refused_translation")
+                self.assertEqual(caught.exception.usage["output_tokens"], 20)
 
     def test_opencode_session_survives_fallback_and_separate_requests(self):
         with tempfile.TemporaryDirectory() as directory:

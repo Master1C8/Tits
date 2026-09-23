@@ -120,7 +120,8 @@ window.fetch = async function (input, options = {}) {
       window.smokeScreenshotRequests.push({
         ...request,
         panelHidden: shadow?.querySelector(".panel")?.hidden === true,
-        visibleLocale: shadow?.querySelector(".screenshotLocaleBadge")?.textContent || ""
+        visibleLocale: shadow?.querySelector(".screenshotLocaleBadge")?.textContent || "",
+        textPaneScroll: document.querySelector(".mainTextContainer")?.scrollTop
       });
       return { ok: true, json: async () => ({
         ok: true, locale: request.locale, number: request.screenshotNumber, sequence: request.sequence,

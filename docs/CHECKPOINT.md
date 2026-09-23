@@ -62,6 +62,16 @@ Shared technical evidence:
   available space and clips only when they still cannot fit, keeping numeric
   values visible. Unit and browser smoke checks passed. The existing 0.1.3
   screenshots predate this change; live visual recapture is pending.
+- Follow-up screenshot defects are corrected in the source checkout: compact
+  `PHY`/`REF`/`AIM`/`INT`/`WIL`/`LIB` labels retain their exact game abbreviations;
+  tray-button text wraps inside the button without covering its hotkey badge;
+  provider refusals (including old cached refusals and contextual batches)
+  cannot replace game text; capture no longer stamps a visible locale label,
+  resets the game text pane to a deterministic edge, and clears pointer hover
+  before recording. A refusal leaves source text visible and marks that locale's
+  capture as failed rather than presenting a false translation. The full suite
+  passes, but the existing screenshots still predate these fixes and live visual
+  recapture/review remains pending. No new release archive was built.
 - The measured 2026-09-23 model-usage snapshot is recorded in
   `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
   sync is pending: the guarded site CLI stopped before dry-run because the

@@ -7,6 +7,13 @@ test("normalizes layout whitespace without flattening lines", () => {
   assert.equal(core.normalizeText("  Hello\u00a0 world \n next  "), "Hello world\nnext");
 });
 
+test("recognizes provider refusals without treating ordinary dialogue as refusal", () => {
+  assert.equal(core.isProviderRefusal("Não posso traduzir conteúdo sexual envolvendo menores."), true);
+  assert.equal(core.isProviderRefusal("I cannot translate that passage."), true);
+  assert.equal(core.isProviderRefusal("I cannot open the door."), false);
+  assert.equal(core.isProviderRefusal("Não posso sair daqui."), false);
+});
+
 test("recognizes right-to-left target languages and normalizes Hebrew for HTML", () => {
   for (const language of ["ar", "bal", "bm-Nkoo", "ckb", "dv", "fa", "fa-AF", "iw", "ms-Arab", "pa-Arab", "ps", "sd", "ug", "ur", "yi"]) {
     assert.equal(core.isRtlLanguage(language), true, language);
