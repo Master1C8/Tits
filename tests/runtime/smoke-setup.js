@@ -116,6 +116,7 @@ window.fetch = async function (input, options = {}) {
     }
     if (url.pathname === "/v1/screenshots/capture") {
       const request = JSON.parse(options.body);
+      if (typeof window.smokeScreenshotCaptureHook === "function") window.smokeScreenshotCaptureHook(request);
       const shadow = document.getElementById("vnrevival-translator-tits")?.shadowRoot;
       window.smokeScreenshotRequests.push({
         ...request,
@@ -165,6 +166,7 @@ window.fetch = async function (input, options = {}) {
     return { ok: true, json: async () => ({ ok: true, reselectOnNextLaunch: true }) };
   }
   const source = url.searchParams.get("q") || "";
+  if (typeof window.smokeTranslationRequestHook === "function") window.smokeTranslationRequestHook(url, source);
   window.fetchCalls.push(source);
   const translated = source.includes("VRCTXSEP1X")
     ? "ترى VRCTXSEP1X امرأة جميلة VRCTXSEP2X بالقرب من الباب."

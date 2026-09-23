@@ -86,6 +86,14 @@ Shared technical evidence:
   in failed batch manifests. Full automated tests pass; no live recapture or
   visual pass has been performed for these changes. Long scrollable content and
   artwork behind the game's fixed action bar remain viewport limitations.
+- A later main-menu batch stopped after 16/31 locales at `id`. Its evidence
+  records `failureCode: cancelled`: the Indonesian site configuration loaded,
+  but translation did not start. This coincided with a focus change while the
+  native game was running. The runtime now keeps an all-locale batch active on
+  `visibilitychange`, ignores the translation shortcut during the batch, and
+  uses a bounded timer when backgrounded Chromium suspends animation frames.
+  Browser regression simulates focus loss before `id` and completes 31/31;
+  live recapture and visual review are pending. The partial batch is preserved.
 - The measured 2026-09-23 model-usage snapshot through 16:16:16 UTC is recorded
   in `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`:
   117,603,671 total tokens in 11 nonoverlapping records. Production sync is

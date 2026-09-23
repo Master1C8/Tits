@@ -663,13 +663,42 @@
     textPane.append(filler);
     document.body.append(textPane);
     textPane.scrollTop = 80;
+    const focusProbe = document.createElement("div");
+    focusProbe.style.cssText = "position:fixed;top:35px;left:20px";
+    focusProbe.textContent = "BATCH VISIBILITY PROBE";
+    document.body.append(focusProbe);
     let result;
     let scrollRestored;
+    let simulatedFocusLoss = false;
+    let backgroundCaptured = false;
+    let shortcutIgnored = false;
+    const originalHidden = Object.getOwnPropertyDescriptor(document, "hidden");
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => simulatedFocusLoss });
+    window.smokeTranslationRequestHook = (url, source) => {
+      if (url.searchParams.get("tl") === "id" && source.includes("BATCH VISIBILITY PROBE")) {
+        simulatedFocusLoss = true;
+        document.dispatchEvent(new Event("visibilitychange"));
+        const progress = shadow.querySelector(".status").textContent;
+        window.dispatchEvent(new KeyboardEvent("keydown", {
+          bubbles: true, cancelable: true, ctrlKey: true, shiftKey: true, code: "KeyT"
+        }));
+        shortcutIgnored = shadow.querySelector(".status").textContent === progress;
+      }
+    };
+    window.smokeScreenshotCaptureHook = (request) => {
+      if (request.locale === "id" && simulatedFocusLoss) backgroundCaptured = true;
+    };
     try {
       result = await api.captureAllLanguages();
       scrollRestored = textPane.scrollTop === 80;
     } finally {
+      delete window.smokeScreenshotCaptureHook;
+      delete window.smokeTranslationRequestHook;
+      if (originalHidden) Object.defineProperty(document, "hidden", originalHidden);
+      else delete document.hidden;
+      document.dispatchEvent(new Event("visibilitychange"));
       textPane.remove();
+      focusProbe.remove();
     }
     const expectedLocales = languageOptions.map(([code]) => code);
     const capturedLocales = window.smokeScreenshotRequests.map((request) => request.locale);
@@ -678,6 +707,8 @@
     return {
       screenshotActionVisible,
       screenshotBatchCompletes: result.outcome === "complete" && result.captured === 31,
+      screenshotSurvivesFocusLoss: backgroundCaptured && shortcutIgnored && result.failureCode === ""
+        && window.smokeScreenshotRequests.length === 31,
       screenshotLocalesCanonical: JSON.stringify(capturedLocales) === JSON.stringify(expectedLocales),
       screenshotFramesUnannotated: window.smokeScreenshotRequests.every((request, index) => request.sequence === index + 1
         && request.panelHidden && request.visibleLocale === ""),

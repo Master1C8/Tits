@@ -1540,7 +1540,23 @@
   }
 
   function waitForPaint() {
-    return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return new Promise((resolve) => {
+      let frame = 0;
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(fallback);
+        if (frame) cancelAnimationFrame(frame);
+        resolve();
+      };
+      // Chromium can suspend animation frames after the game loses focus. The
+      // capture batch still needs to finish its DOM update and CDP screenshot.
+      const fallback = setTimeout(finish, document.hidden ? 100 : 500);
+      if (!document.hidden) {
+        frame = requestAnimationFrame(() => { frame = requestAnimationFrame(finish); });
+      }
+    });
   }
 
   async function captureTranslatedScreen(batchId, locale, screenshotNumber, sequence, total, gameVersion) {
@@ -2490,7 +2506,7 @@
     if (event.ctrlKey && event.shiftKey && event.code === "KeyT") {
       event.preventDefault();
       event.stopPropagation();
-      translateScreen(true);
+      if (!screenshotBatchRunning) translateScreen(true);
     }
   }, true);
 
@@ -2558,7 +2574,8 @@
     if (document.hidden) {
       clearTimeout(scanTimer);
       scanTimer = 0;
-      if (abortController) abortController.abort();
+      // Losing focus must not cancel a user-started all-locale capture.
+      if (abortController && !screenshotBatchRunning) abortController.abort();
       return;
     }
     for (const element of visibleTranslationContainers) queueTranslationContainer(element);
