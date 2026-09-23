@@ -184,13 +184,14 @@ grep -Eq 'VNRevivalGameConfig' "$ROOT/.build/game-config.js"
 grep -Eq 'choose_game_application' launcher/macos/launch.sh
 grep -Eq 'RESELECT_MARKER' launcher/macos/launch.sh
 grep -Fq -- '--credential-id "$GAME_ID"' launcher/macos/launch.sh
-grep -Fq 'ENVIRON["VNREVIVAL_GAME_PROCESS"]' launcher/macos/launch.sh
+grep -Fq 'ENVIRON["VNREVIVAL_GAME_EXECUTABLE"]' launcher/macos/launch.sh
 if grep -Fq 'awk -v executable="$GAME_PROCESS_PATH"' launcher/macos/launch.sh; then
   echo "macOS process detection exposes the searched executable in awk arguments" >&2
   exit 1
 fi
 for REQUIRED in 'GAME_START_TIMEOUT_SECONDS=30' 'is_expected_game_app' \
-    'kMDItemCFBundleIdentifier' '/usr/bin/open -na "$GAME_APP"' 'VNRevivalMacGameBundleIdentifier'; do
+    'kMDItemCFBundleIdentifier' '/usr/bin/open -na "$GAME_APP"' 'VNRevivalMacGameBundleIdentifier' \
+    '/Contents/MacOS/' 'following == "" || following == " "'; do
   grep -Fq -- "$REQUIRED" launcher/macos/launch.sh || {
     echo "Missing native macOS game startup behavior: $REQUIRED" >&2
     exit 1

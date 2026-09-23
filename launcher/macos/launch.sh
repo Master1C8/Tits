@@ -43,8 +43,17 @@ show_error() {
 }
 
 game_main_running() {
-  ps -ax -o command= | VNREVIVAL_GAME_PROCESS="$GAME_PROCESS_PATH" /usr/bin/awk \
-    'BEGIN{executable=ENVIRON["VNREVIVAL_GAME_PROCESS"]} index($0, executable) && $0 !~ /--type=/{found=1} END{exit !found}'
+  ps -ax -o command= | VNREVIVAL_GAME_EXECUTABLE="$MAC_GAME_EXECUTABLE" /usr/bin/awk '
+    BEGIN { marker="/Contents/MacOS/" ENVIRON["VNREVIVAL_GAME_EXECUTABLE"] }
+    $0 !~ /--type=/ {
+      start=index($0, marker)
+      if (start) {
+        following=substr($0, start + length(marker), 1)
+        if (following == "" || following == " ") found=1
+      }
+    }
+    END { exit !found }
+  '
 }
 
 choose_game_application() {
@@ -88,7 +97,6 @@ if (( FORCE_RESELECT )) || ! is_expected_game_app "$GAME_APP"; then
   mkdir -p "$GAME_PATH_DIR"
   print -r -- "$GAME_APP" > "$GAME_PATH_FILE"
 fi
-GAME_PROCESS_PATH="$GAME_APP/Contents/MacOS/$MAC_GAME_EXECUTABLE"
 if [[ ! -x "$CONTROLLER" || ! -f "$TRANSLATOR" || ! -f "$LOCAL_SERVICE" ]]; then
   show_error "The translator files are incomplete. Reinstall the application."
   exit 1

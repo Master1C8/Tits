@@ -15,15 +15,16 @@ Shared technical evidence:
 - Full suite: `./scripts/test-tits.sh --quiet` passed on 2026-09-23 (37 Node
   checks, 69 Python checks, browser smoke, 31-language source verification).
 - macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.0.zip`,
-  385,154 bytes, SHA-256
-  `ecaa83639cd74bc3dc269e1d90c318c6d7661301e058cbf74cc8a4392f97c8d5`.
+  385,221 bytes, SHA-256
+  `6727cf161b5ce9d409f1696e7f1add75285add874e650d86c1f13fd720bcb5f6`.
 - Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.0.zip`,
   11,458,373 bytes, SHA-256
-  `066cd5f9def1a71dddfc3de9d431c22ab014951a0ee601bcee92ea07b12c0520`.
+  `38b091977892be5b942b50f4b990a8a4d15e1e969952d3c431bf635e6a910709`.
 - `./scripts/build-tits.sh` passed archive checksum, universal macOS controller,
   Windows PE32+ x86-64, signing-integrity, package-content, and product gates.
-- Official game archive inspection passed, but real installation, game launch,
-  CDP attachment, runtime interaction, and visual QA remain `not-run`.
+- Official game archive inspection passed. A real macOS launch, CDP attachment,
+  and visible translator-panel check passed on 2026-09-23. Provider-backed
+  translation, language-specific runtime checks, and visual QA remain `not-run`.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|
