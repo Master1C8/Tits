@@ -12,16 +12,18 @@ structure and remains `needs-review` unless separate evidence is supplied.
 
 Shared technical evidence:
 
-- Full suite: `./scripts/test-tits.sh --quiet` passed on 2026-09-23 (38 Node
-  checks, 71 Python checks, browser smoke, 31-language source verification).
-- macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.3.zip`,
-  385,311 bytes, SHA-256
-  `00a41f143a4ec8a6d16b9ef02cc2e4e0b022c84b074f6973b276667c7c7c400e`.
-- Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.3.zip`,
-  11,458,637 bytes, SHA-256
-  `c83749ba8fbbbc7a7a04d2e7f150861539a4b4487622179dba59e1b091445f58`.
-- `./scripts/build-tits.sh` passed archive checksum, universal macOS controller,
-  Windows PE32+ x86-64, signing-integrity, package-content, and product gates.
+- Version `0.1.4` is current. `./scripts/build-tits.sh` passed on 2026-09-24:
+  45 Node tests, 76 Python tests, browser smoke, 31-language source
+  verification, archive checksums, universal macOS controller, Windows PE32+
+  x86-64, signing integrity, and package-content gates.
+- macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.4.zip`,
+  998,924 bytes, SHA-256
+  `fb4a5f09d39fe29228d6acc13b38e4e1670855566bc28112733e7b2a13f99543`.
+- Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.4.zip`,
+  11,574,599 bytes, SHA-256
+  `7c30022471cfd427452d29200990a6055043dfa099310a1351bc606a6c9a4914`.
+- Previous version `0.1.3` archives are preserved under
+  `.build/previous-release-0.1.3/` rather than in the current release folder.
 - Official game archive inspection passed. A clean real macOS launch, local
   helper startup, CDP attachment, and visible translator-panel check passed on
   2026-09-23.
@@ -98,15 +100,13 @@ Shared technical evidence:
   for both macOS and Windows. The exact `icon.icns` was extracted from the
   checksum-verified official archive; its 512 px image supplies the Windows
   icon. The full suite, app-only macOS build, macOS code-signature verification,
-  and unpacked Windows build passed on 2026-09-24. The existing release archives
-  were not rebuilt; no game executable or other game payload is bundled.
-- The measured 2026-09-23 model-usage snapshot through 16:16:16 UTC is recorded
-  in `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`:
-  117,603,671 total tokens in 11 nonoverlapping records. Production sync is
-  pending. The guarded site CLI verified the manifest transfer but stopped
-  before the dry-run because the running SiteForMods revision `f848c32804c4`
-  differs from local `main` `e836bdc3ea3f`. No production deployment was
-  authorized or performed, and no Model usage write was made.
+  and unpacked Windows build passed on 2026-09-24. No game executable or other
+  game payload is bundled.
+- The earlier measured 2026-09-23 model-usage snapshot through 16:16:16 UTC
+  remains in `data/model-usage-2026-09-23.json`. The complete release-build
+  measurement through 20:31:56 UTC is in `docs/MODEL_USAGE_AUDIT.md` and
+  `data/model-usage-2026-09-24.json`: 178,631,742 tokens in 16 nonoverlapping
+  records. The VN Revival CLI applied and then read back these exact records.
 - Screenshot batching now requires a per-installation `.enable-screenshot-batches`
   marker in the local service data directory. Without it, the batch controls
   remain hidden and screenshot helper routes reject requests. The marker is
@@ -144,6 +144,16 @@ Shared technical evidence:
   A fresh dry-run verified 0 additions, 0 replacements, and 120 identical
   skips. English source captures remain local. Game publication, visibility,
   app deployment, and editorial quality status were not changed by this upload.
+- On 2026-09-24, the current `0.1.4` macOS and Windows archives were added to
+  the existing published, visible VN Revival TiTS card. A fresh `game mod-file
+  sync --dry-run` reported `SKIP` with matching SHA-256 for both platforms.
+  The card's previously empty `localization.releaseVersion` was set to `0.1.4`
+  through `game edit`, which also generated its initial-testing changelog row;
+  a second dry-run reported no content changes. The private GitHub project URL
+  and final measured Model usage gates were applied and read back before the
+  archive upload. No site deployment was performed. The broad `content audit`
+  could not run because the running site lacks the `social-posts` collection;
+  platform-specific upload/read-back checks succeeded independently.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|

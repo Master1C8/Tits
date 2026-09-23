@@ -1,5 +1,37 @@
 # TiTS development model usage audit
 
+## Version 0.1.4 release-build measurement
+
+Cutoff: 2026-09-23 20:31:56.022 UTC, after both version 0.1.4 archives were
+built and verified. The new complete replacement manifest is
+`data/model-usage-2026-09-24.json`. It retains all 11 earlier records and adds
+five nonoverlapping records from the coordinator and three additional
+automatic-review sessions. Subsequent site administration and the unmeasured
+reporting tail are excluded; this is a measured development subtotal, not a
+claim about monetary charges or complete Codex platform overhead.
+
+| Row | Scope | Model | Input | Cached input | Output | Reasoning | Total |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| A5 | Screenshot controls, runtime fixes, icon, translation maintenance | gpt-6-sol | 25,010,044 | 24,523,776 | 75,670 | 39,799 | 25,085,714 |
+| A6 | Translation context and prompt engineering | gpt-6-sol | 16,487,164 | 16,255,616 | 53,599 | 28,016 | 16,540,763 |
+| P1 | Screenshot site publication and release preparation | gpt-6-sol | 9,393,806 | 9,198,336 | 9,205 | 3,099 | 9,403,011 |
+| A7 | Version 0.1.4 release build | gpt-6-sol | 7,766,878 | 7,715,072 | 9,524 | 4,289 | 7,776,402 |
+| A8 | Automated review of post-audit work | codex-auto-review | 2,218,179 | 1,977,344 | 4,002 | 1,594 | 2,222,181 |
+| **Added** | | | **60,876,071** | **59,670,144** | **152,000** | **76,797** | **61,028,071** |
+| **All 16 records** | | | **178,171,259** | **173,914,368** | **460,483** | **216,233** | **178,631,742** |
+
+The coordinator rows are successive differences between cumulative
+`token_count` snapshots in session
+`01a0cd23-2a60-7a70-b896-19684334fb19`: 16:16:16.017, 18:33:03.475,
+19:45:37.004, 20:14:35.750, and 20:31:56.022 UTC. The review row sums
+complete sessions `01a0cf3b-d68b-7241-98e8-4b76a20272d0`,
+`01a0cf85-1c08-7643-83f3-67ed874523ea`, and
+`01a0cfc3-244e-78a2-b4fe-fb482618c917`, each exactly once. Row A5 and P1
+are mixed work windows; their labels do not assert more precise attribution.
+Cached input is a subset of input, and reasoning a subset of output.
+
+## Earlier snapshot (preserved)
+
 Cutoff: 2026-09-23 16:16:16 UTC, immediately before the request to update
 site Model usage. Scope: the Codex Desktop project session that created and
 maintained this TiTS translator and nine automatic review sessions with the
@@ -58,8 +90,6 @@ the source sessions, so it contains no `actualCostUsd` values. The site's
 standard API-equivalent estimate is separate and partial for models without a
 verified public API rate.
 
-Production publication remains pending: the guarded `./vnrevival game
-model-usage sync trials-in-tainted-space ... --dry-run` verified the transferred
-manifest but refused to read or write private rows because the live SiteForMods
-revision `f848c32804c4` differs from local `main` `e836bdc3ea3f`. This audit
-does not authorize a site deployment, and no Model usage change was applied.
+At that earlier snapshot, production publication was pending because the
+guarded site CLI reported a live/local revision mismatch. This historical
+status does not describe the newer release-build measurement above.
