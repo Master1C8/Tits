@@ -77,6 +77,15 @@ Shared technical evidence:
   and 10 Windows QA PNGs were moved to the macOS Trash under
   `TiTS-screenshots-20260923`; no screenshot evidence remains in the translator
   output directory or project QA folder. Game artwork and app icons were kept.
+- Four subsequent numbered screenshot batches produced 109 PNGs. The first
+  stopped after 16 locales; the other three completed 31/31. Review found RTL
+  shortcut-badge overflow, inconsistent `HP` health-bar translation, and a
+  combat capture beginning mid-log. The source checkout now excludes physical
+  shortcuts from translation, localizes exact health-bar `HP` without a provider
+  request, starts combat captures at the top, and records failure locale/code
+  in failed batch manifests. Full automated tests pass; no live recapture or
+  visual pass has been performed for these changes. Long scrollable content and
+  artwork behind the game's fixed action bar remain viewport limitations.
 - The measured 2026-09-23 model-usage snapshot is recorded in
   `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
   sync is pending: the guarded site CLI stopped before dry-run because the

@@ -9,6 +9,7 @@
     Suula: "סולה"
   });
   const compactStats = new Set(["PHY", "REF", "AIM", "INT", "WIL", "LIB"]);
+  const healthLabels = root.VNRevivalTitsHealthLabels || Object.freeze({});
   const trayStyleId = "vnrevival-tits-tray-label-style";
 
   function ensureTrayLabelStyle() {
@@ -65,7 +66,8 @@
     contractVersion: 2,
     privateSelectors: Object.freeze([
       "input", "textarea", "[contenteditable='true']", ".gameSaveSlot",
-      ".saveLoadContainer", "[class*='playerName' i]", "[data-tits-private]"
+      ".saveLoadContainer", "[class*='playerName' i]", "[data-tits-private]",
+      ".keybindDisplay"
     ]),
     categorySelectors: Object.freeze({
       story: ".mainText,.mainTextContainer,.combatOutput,.mailText,.dropDescText,.bustText,.scene,.story,.output,.eventText,.sceneText",
@@ -84,10 +86,17 @@
     hasSourceText(value, core) {
       return core.hasEnglishText(value);
     },
+    localTranslation(source, language, node) {
+      if (String(source || "").trim() !== "HP"
+          || !node?.parentElement?.matches(".statBarContainer > .statText")) return null;
+      return Object.prototype.hasOwnProperty.call(healthLabels, language)
+        ? healthLabels[language] : null;
+    },
     normalizeTranslation(source, translation, _language, node) {
       const label = String(source || "").trim();
-      return node?.parentElement?.matches(".statBarContainer > .statText") && compactStats.has(label)
-        ? source : translation;
+      if (!node?.parentElement?.matches(".statBarContainer > .statText")) return translation;
+      if (compactStats.has(label)) return source;
+      return translation;
     },
     normalizeControlTranslation(source, translation, language) {
       if (language !== "he") return translation;

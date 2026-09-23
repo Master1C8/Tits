@@ -1764,12 +1764,17 @@ class LocalServiceBridge:
 
     def finish_screenshot_batch(
         self, batch_id: Any, outcome: Any, captured: Any, expected: Any, settings_restored: Any,
+        failed_locale: Any = "", failure_code: Any = "",
     ) -> dict[str, Any]:
         if not isinstance(batch_id, str) or not re.fullmatch(r"[0-9a-f]{32}", batch_id) \
                 or outcome not in ("complete", "failed", "cancelled") \
                 or type(captured) is not int or type(expected) is not int \
                 or not 0 <= captured <= expected <= 99 or settings_restored is not True:
             raise BridgeError("screenshot_request_invalid", "Invalid screenshot completion", 400)
+        if not isinstance(failed_locale, str) or not re.fullmatch(r"[A-Za-z0-9-]{0,20}", failed_locale) \
+                or not isinstance(failure_code, str) or not re.fullmatch(r"[A-Za-z0-9_-]{0,80}", failure_code) \
+                or (outcome == "complete" and (failed_locale or failure_code)):
+            raise BridgeError("screenshot_request_invalid", "Invalid screenshot failure details", 400)
         with _SCREENSHOT_LOCK:
             directory = self._screenshot_batches.get(batch_id)
             if directory is None:
@@ -1786,11 +1791,14 @@ class LocalServiceBridge:
                 "outcome": outcome,
                 "capturedScreenshots": captured,
                 "settingsRestored": True,
+                "failedLocale": failed_locale,
+                "failureCode": failure_code,
                 "automatedResult": automated_result,
                 "result": "capture-pass-review-pending" if automated_result == "pass" else "automated-fail",
             })
             self._write_screenshot_manifest(directory, manifest)
-            self.log_event("screenshot.batch", outcome=outcome, captured=captured, expected=expected)
+            self.log_event("screenshot.batch", outcome=outcome, captured=captured,
+                           expected=expected, failed_locale=failed_locale, failure_code=failure_code)
             return {"ok": True, "directory": str(directory), "captured": captured,
                     "expected": expected, "automatedResult": automated_result}
 
@@ -1935,7 +1943,8 @@ class LocalServiceRequestHandler(BaseHTTPRequestHandler):
             elif self.path == "/v1/screenshots/finish":
                 result = self.bridge.finish_screenshot_batch(
                     payload.get("batchId"), payload.get("outcome"), payload.get("captured"),
-                    payload.get("expected"), payload.get("settingsRestored")
+                    payload.get("expected"), payload.get("settingsRestored"),
+                    payload.get("failedLocale", ""), payload.get("failureCode", "")
                 )
             elif self.path == "/v1/screenshots/open":
                 result = self.bridge.open_screenshot_batch(payload.get("batchId"))

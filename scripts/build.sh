@@ -53,6 +53,7 @@ python3 "$ROOT/scripts/generate-openai-config.py" "$ROOT/src/openai-compatible.j
   cat "$BUILD_DIR/openai-config.js"
   cat "$ROOT/src/providers.js"
   cat "$BUILD_DIR/game-config.js"
+  cat "$GAME_DIR/health-labels.js"
   cat "$GAME_DIR/adapter.js"
   cat "$ROOT/src/interface-presets.js"
   cat "$ROOT/src/panel-view.js"

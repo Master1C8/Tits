@@ -37,6 +37,7 @@ node --check "$ROOT/.build/openai-config.js"
 node --check src/providers.js
 node --check src/interface-presets.js
 node --check src/panel-view.js
+node --check "src/games/$GAME_ID/health-labels.js"
 node --check "src/games/$GAME_ID/adapter.js"
 node --check src/translator-runtime.js
 node --check tests/runtime/smoke-report.js

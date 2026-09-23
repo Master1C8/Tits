@@ -38,6 +38,10 @@ Hebrew script even when a translation service preserves their Latin names.
 Long translated stat labels shrink to fit the game's narrow sidebar bars. If a
 label is still too long to remain legible, the bar clips it rather than letting
 it overlap the numeric value.
+The exact `HP` health-bar label uses a stable short translation in each target
+language; shortcut badges such as `Esc` and `F1` stay as physical key names.
+Combat captures start at the beginning of the log. Long scrollable game pages
+may still need another capture at a different scroll position to show all text.
 
 If the panel does not appear, close TiTS completely and launch it through the
 translator again. Keep the whole Windows package together; do not move only the

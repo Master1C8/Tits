@@ -1171,6 +1171,12 @@
     for (const node of nodes) {
       const source = sourceForNode(node);
       if (!hasSourceText(source)) continue;
+      const local = typeof adapter.localTranslation === "function"
+        ? adapter.localTranslation(source, settings.language, node) : null;
+      if (local) {
+        rememberTranslation(node, source, local, settings.language, settings.provider);
+        continue;
+      }
       const container = contextContainerForNode(node) || node.parentElement;
       if (!blocks.has(container)) blocks.set(container, []);
       blocks.get(container).push({ node, source, kind: classifyNode(node) });
@@ -1501,6 +1507,7 @@
       }
     } catch (error) {
       outcome = error?.name === "AbortError" ? "cancelled" : "failed";
+      lastErrorCode = error?.code || error?.name || "translation_failed";
       setTranslationStatus((text) => error && error.name === "AbortError" ? text.translationCancelled : text.connectionFailed);
     } finally {
       if (runVariant !== translationVariant()) outcome = "superseded";
@@ -1509,6 +1516,7 @@
     }
     return {
       outcome,
+      errorCode: lastErrorCode,
       failedJobs: lastFailedJobs.reduce((count, job) => count + (job.batchParts?.length || 1), 0)
     };
   }
@@ -1540,8 +1548,9 @@
     const previousScroll = textPane?.scrollTop;
     panel.hidden = true;
     try {
-      if (textPane) textPane.scrollTop = textPane.querySelector(".combatOutput")
-        ? textPane.scrollHeight : 0;
+      // The bottom of a long combat log can begin mid-paragraph. Capture from
+      // the natural start of the page and restore the player's scroll after.
+      if (textPane) textPane.scrollTop = 0;
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       await waitForPaint();
       return await requestLocalHelper("/v1/screenshots/capture", {
@@ -1586,6 +1595,7 @@
     const disabled = new Map(controls.map((control) => [control, control.disabled]));
     let captured = 0;
     let failedLocale = "";
+    let failureCode = "";
     let outcome = "complete";
     screenshotBatchRunning = true;
     for (const control of controls) control.disabled = true;
@@ -1612,13 +1622,15 @@
         const result = await translateScreen(true);
         if (!result || !["complete", "source"].includes(result.outcome) || result.failedJobs) {
           outcome = "failed";
+          failureCode = result?.errorCode || result?.outcome || "translation_failed";
           break;
         }
         await captureTranslatedScreen(batchId, locale, screenshotNumber, index + 1, languages.length, gameVersion);
         captured += 1;
       }
-    } catch (_) {
+    } catch (error) {
       outcome = "failed";
+      failureCode = error?.code || error?.name || "capture_failed";
     } finally {
       settings.language = original.language;
       settings.mode = original.mode;
@@ -1639,7 +1651,9 @@
       try {
         await requestLocalHelper("/v1/screenshots/finish", {
           body: {
-            batchId, outcome, captured, expected: languages.length, settingsRestored: true
+            batchId, outcome, captured, expected: languages.length, settingsRestored: true,
+            failedLocale: outcome === "failed" ? failedLocale : "",
+            failureCode: outcome === "failed" ? failureCode : ""
           }
         });
         await requestLocalHelper("/v1/screenshots/open", { body: { batchId } });
@@ -1652,7 +1666,7 @@
     } else {
       setTranslationStatus((preset) => formatMessage(preset.screenshotFailed, { locale: failedLocale }));
     }
-    return { outcome, captured, batchId, failedLocale, screenshotNumber };
+    return { outcome, captured, batchId, failedLocale, failureCode, screenshotNumber };
   }
 
   function retryFailed() {

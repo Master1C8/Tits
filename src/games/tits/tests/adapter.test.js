@@ -2,6 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+require("../health-labels.js");
 require("../adapter.js");
 const adapter = globalThis.VNRevivalGameAdapter;
 
@@ -14,6 +15,7 @@ test("TiTS adapter exposes the observed public-build DOM categories", () => {
   assert.ok(adapter.contextSelectors.includes("[role='tooltip']"));
   assert.ok(adapter.privateSelectors.includes(".gameSaveSlot"));
   assert.ok(adapter.privateSelectors.includes("input"));
+  assert.ok(adapter.privateSelectors.includes(".keybindDisplay"));
 });
 
 test("TiTS adapter reads the version exposed by the game bundle", () => {
@@ -43,6 +45,17 @@ test("compact stat abbreviations stay stable instead of becoming misleading tran
     assert.equal(adapter.normalizeTranslation(label, "wrong label", "ru", statNode), label);
   }
   assert.equal(adapter.normalizeTranslation("REF", "Référence", "fr", { parentElement: { matches: () => false } }), "Référence");
+});
+
+test("HP health bar has a stable localized label in every target locale", () => {
+  const languages = require("../../../languages.json");
+  const statNode = { parentElement: { matches: (selector) => selector === ".statBarContainer > .statText" } };
+  for (const [language] of languages.filter(([code]) => code !== "en")) {
+    assert.notEqual(adapter.localTranslation("HP", language, statNode), "HP", language);
+  }
+  assert.equal(adapter.localTranslation("HP", "ru", statNode), "ОЗ");
+  assert.equal(adapter.localTranslation("HP", "en", statNode), null);
+  assert.equal(adapter.localTranslation("HP", "ru", { parentElement: { matches: () => false } }), null);
 });
 
 test("tray button labels get scoped wrapping and badge clearance", () => {

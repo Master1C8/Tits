@@ -162,6 +162,13 @@ class LocalServiceTests(unittest.TestCase):
                 self.assertEqual(manifest["screenshots"][0]["number"], 7)
                 self.assertEqual(manifest["screenshots"][0]["content"], "Gameplay")
                 self.assertEqual(manifest["screenshots"][0]["sha256"], local_service.hashlib.sha256(image).hexdigest())
+                failed_capture = bridge.capture_screenshot("c" * 32, "en", 8, 1, 2, "0.11.1", "0.9.6")
+                failed = bridge.finish_screenshot_batch("c" * 32, "failed", 1, 2, True,
+                                                       "ru", "openai_rate_limited")
+                failed_manifest = json.loads((Path(failed_capture["directory"]) / "screenshots-evidence.json").read_text())
+                self.assertEqual(failed["automatedResult"], "fail")
+                self.assertEqual(failed_manifest["failedLocale"], "ru")
+                self.assertEqual(failed_manifest["failureCode"], "openai_rate_limited")
                 with self.assertRaises(local_service.BridgeError) as caught:
                     bridge.capture_screenshot("a" * 32, "pt-BR", 7, 1, 1, "0.11.1", "0.9.6")
                 self.assertEqual(caught.exception.code, "screenshot_exists")

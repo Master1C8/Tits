@@ -658,6 +658,7 @@
     textPane.className = "mainTextContainer";
     textPane.style.cssText = "position:fixed;left:-1000px;top:0;height:100px;width:100px;overflow:auto";
     const filler = document.createElement("div");
+    filler.className = "combatOutput";
     filler.style.height = "400px";
     textPane.append(filler);
     document.body.append(textPane);
@@ -825,8 +826,58 @@
     }
   })();
 
+  const localizedHpWithoutProvider = await (async () => {
+    const bar = document.createElement("div");
+    bar.className = "statBarContainer";
+    bar.style.cssText = "position:fixed;top:80px;left:20px;width:150px;height:30px";
+    const label = document.createElement("div");
+    label.className = "statText";
+    label.textContent = "HP";
+    bar.append(label);
+    document.body.append(bar);
+    const language = shadow.querySelector(".language");
+    language.value = "ru";
+    language.dispatchEvent(new Event("change"));
+    window.__vnRevivalTranslator.showTranslations();
+    const beforeRequests = window.fetchCalls.filter((source) => source === "HP").length;
+    try {
+      await window.__vnRevivalTranslator.translateScreen();
+      const translated = label.textContent === "ОЗ"
+        && window.fetchCalls.filter((source) => source === "HP").length === beforeRequests;
+      window.__vnRevivalTranslator.showOriginal();
+      return translated && label.textContent === "HP";
+    } finally {
+      bar.remove();
+      language.value = "en";
+      language.dispatchEvent(new Event("change"));
+    }
+  })();
+
+  const shortcutBadgesStayPhysical = await (async () => {
+    const badge = document.createElement("div");
+    badge.className = "keybindDisplay";
+    badge.style.cssText = "position:fixed;top:80px;left:20px;width:30px;height:24px";
+    badge.textContent = "Esc";
+    document.body.append(badge);
+    const language = shadow.querySelector(".language");
+    language.value = "ar";
+    language.dispatchEvent(new Event("change"));
+    window.__vnRevivalTranslator.showTranslations();
+    try {
+      await window.__vnRevivalTranslator.translateScreen();
+      return badge.textContent === "Esc" && !badge.hasAttribute("dir")
+        && !badge.hasAttribute("data-vnrevival-translated");
+    } finally {
+      badge.remove();
+      language.value = "en";
+      language.dispatchEvent(new Event("change"));
+    }
+  })();
+
   // Keep each expectation once; the reporter lists failed names only.
   window.smokeReport({
+    localizedHpWithoutProvider,
+    shortcutBadgesStayPhysical,
     translatedStatBarFits,
     trayButtonBadgeClearance,
     hebrewSpeciesChoiceLabel,
