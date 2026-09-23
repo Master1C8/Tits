@@ -1,0 +1,8 @@
+.build/
+.cache/
+.venv/
+launcher/READY_TO_SHARE/
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store

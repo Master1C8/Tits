@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "tits",
+  "title": "Trials in Tainted Space",
+  "shortTitle": "TiTS",
+  "siteSlug": "trials-in-tainted-space",
+  "translatorName": "TiTS Translator",
+  "sourceLanguage": "en",
+  "supportedVersions": [
+    "0.9.165"
+  ],
+  "launchStrategy": "electron-cdp",
+  "debugTargetTitleContains": "Trials in Tainted Space",
+  "debugTargetUrlContains": "tits://titsapp",
+  "storageNamespace": "tits-translator",
+  "cacheDatabase": "tits-translator-cache",
+  "steamAppId": 0,
+  "windowsExecutable": "TiTS-public-0.9.165-win.exe",
+  "macGameBundleIdentifier": "com.fenoxo.tits",
+  "macGameExecutable": "TiTS",
+  "dataDirectory": "VN Revival/TiTS Translator",
+  "bundleIdentifier": "fun.vnrevival.tits.translator",
+  "iconPng": "assets/icon-1024.png",
+  "iconIcns": "assets/AppIcon.icns",
+  "archivePrefix": "TiTS-Translator",
+  "windowsDistributionName": "TiTS Translator Windows",
+  "theme": {
+    "background": "#19223a",
+    "surface": "#243452",
+    "field": "#1d2b48",
+    "text": "#f5f7ff",
+    "muted": "#b7c2d9",
+    "border": "#536989",
+    "accent": "#8d31b0",
+    "onAccent": "#ffffff",
+    "danger": "#ff9ba8",
+    "warning": "#f3d88d"
+  }
+}

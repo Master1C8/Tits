@@ -1,0 +1,810 @@
+(async function () {
+  window.scrollTo(0, 0);
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const host = document.getElementById("vnrevival-translator-tits");
+  const shadow = host.shadowRoot;
+  const escapedPanelEvents = [];
+  const panelEventTypes = ["pointerdown", "click", "change", "keydown"];
+  const rememberEscapedPanelEvent = (event) => escapedPanelEvents.push(event.type);
+  for (const eventType of panelEventTypes) document.addEventListener(eventType, rememberEscapedPanelEvent);
+  const panelEventProbe = document.createElement("input");
+  shadow.appendChild(panelEventProbe);
+  for (const eventType of panelEventTypes) {
+    panelEventProbe.dispatchEvent(new Event(eventType, { bubbles: true, composed: true }));
+  }
+  panelEventProbe.remove();
+  for (const eventType of panelEventTypes) document.removeEventListener(eventType, rememberEscapedPanelEvent);
+  const panelEventsStayOutOfGame = escapedPanelEvents.length === 0;
+  const startsExpanded = !shadow.querySelector(".panel").classList.contains("collapsed")
+    && shadow.querySelector(".collapseToggle").textContent === "−"
+    && shadow.querySelector(".collapseToggle").getAttribute("aria-expanded") === "true";
+  const defaultLanguage = shadow.querySelector(".language").value;
+  const autoCheckbox = shadow.querySelector(".auto");
+  const defaultAutoTranslate = autoCheckbox.checked === true
+    && window.__vnRevivalTranslator.settings().autoTranslate === true;
+  const mainButton = shadow.querySelector(".translate");
+  const autoModeHidesTranslate = mainButton.hidden
+    && mainButton.parentElement.hidden
+    && !shadow.querySelector(".autoTranslateHint");
+  const privacyChoiceRemoved = !shadow.querySelector(".privacy,.privacyText,.allowAuto,.manualOnly");
+  const languageOptions = Array.from(shadow.querySelector(".language").options)
+    .map((option) => [option.value, option.textContent]);
+  const languageIsTopLevel = !!shadow.querySelector(".panel > .bar > .language")
+    && !shadow.querySelector(".settings .language")
+    && !!shadow.querySelector(".bar > .collapseToggle")
+    && getComputedStyle(shadow.querySelector(".quickLanguage")).display !== "none";
+  const interfaceTranslationCheckbox = shadow.querySelector(".interfaceTranslation");
+  const interfaceToggleIsClearlyLabelled = interfaceTranslationCheckbox.checked === false
+    && shadow.querySelector(".interfaceTranslationLabel").textContent === "Translate panel interface"
+    && shadow.querySelector(".interfaceTranslationToggle").nextElementSibling.classList.contains("autoToggle");
+  const compactGooglePanel = shadow.querySelector(".openAICompatibleBox").hidden
+    && host.getBoundingClientRect().height < 400;
+  const gameThemeApplied = getComputedStyle(shadow.querySelector(".panel")).backgroundColor === "rgb(25, 34, 58)";
+  // Exercise idle, progress, wrapped failures and retry in both provider layouts.
+  // Check actual geometry, including the footer and controls, at a narrow width.
+  const stableTranslationFeedback = (() => {
+    const panel = shadow.querySelector(".panel");
+    const status = shadow.querySelector(".status");
+    const retry = shadow.querySelector(".retry");
+    const aiBox = shadow.querySelector(".openAICompatibleBox");
+    const saved = { status: status.textContent, retry: retry.disabled, label: retry.textContent, ai: aiBox.hidden, width: panel.style.width };
+    const geometry = () => [panel, retry, shadow.querySelector(".settings"), shadow.querySelector(".site")]
+      .flatMap((element) => {
+        const bounds = element.getBoundingClientRect();
+        return [bounds.x, bounds.y, bounds.width, bounds.height];
+      }).join(",");
+    let stable = true;
+    try {
+      for (const width of ["330px", "240px"]) {
+        panel.style.width = width;
+        for (const aiHidden of [true, false]) {
+          aiBox.hidden = aiHidden;
+          status.textContent = "";
+          retry.disabled = true;
+          const idle = geometry();
+          for (const [message, failed] of [
+            ["Translating 1/9999", false],
+            ["Provider rate limit reached · retrying in 60s (4/4)", false],
+            ["Провайдер отклонил запрос. ".repeat(30), true],
+            ["", false],
+          ]) {
+            status.textContent = message;
+            retry.disabled = !failed;
+            retry.textContent = failed ? "Повторить перевод" : "Retry translation";
+            stable = stable && geometry() === idle;
+            if (failed) stable = stable && status.scrollHeight > status.clientHeight
+              && getComputedStyle(status).overflowY === "auto" && status.tabIndex === 0
+              && retry.getBoundingClientRect().height === 32 && retry.scrollWidth === retry.clientWidth;
+          }
+        }
+      }
+      return stable;
+    } finally {
+      status.textContent = saved.status;
+      retry.disabled = saved.retry;
+      retry.textContent = saved.label;
+      aiBox.hidden = saved.ai;
+      panel.style.width = saved.width;
+    }
+  })();
+  const requestsBeforeInterfacePreset = window.fetchCalls.length + window.localHelperCalls.length;
+  shadow.querySelector(".language").value = "ru";
+  shadow.querySelector(".language").dispatchEvent(new Event("change"));
+  interfaceTranslationCheckbox.checked = true;
+  interfaceTranslationCheckbox.dispatchEvent(new Event("change"));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const russianInterfacePresetTextApplied = shadow.querySelector(".quickLanguageLabel").textContent === "Язык"
+    && shadow.querySelector(".translationServiceLabel").textContent === "Сервис перевода"
+    && shadow.querySelector(".autoTitle").textContent === "Автоперевод"
+    && shadow.querySelector(".cacheStats").textContent.startsWith("Кэш:")
+    && shadow.querySelector(".translateAction").textContent === "Перевести"
+    && shadow.querySelector(".modelHelpQuestion").textContent === "Не знаешь какую модель выбрать?"
+    && shadow.querySelector(".modelHelpLink").textContent === "Как это работает"
+    && shadow.querySelector(".modelHelpLink").tagName === "BUTTON"
+    && !shadow.querySelector(".modelHelpLink").hasAttribute("href")
+    && !shadow.querySelector(".modelHelpLink").hasAttribute("target")
+    && window.__vnRevivalTranslator.settings().translateInterface === true;
+  const interfacePresetMadeNoRequests = window.fetchCalls.length + window.localHelperCalls.length === requestsBeforeInterfacePreset;
+  const russianInterfacePresetApplied = russianInterfacePresetTextApplied && interfacePresetMadeNoRequests;
+  interfaceTranslationCheckbox.checked = false;
+  interfaceTranslationCheckbox.dispatchEvent(new Event("change"));
+  shadow.querySelector(".language").value = "en";
+  shadow.querySelector(".language").dispatchEvent(new Event("change"));
+  const englishInterfaceRestored = shadow.querySelector(".quickLanguageLabel").textContent === "Language"
+    && shadow.querySelector(".translationServiceLabel").textContent === "Translation service"
+    && shadow.querySelector(".modelHelpQuestion").textContent === "Don't know which model to choose?"
+    && shadow.querySelector(".modelHelpLink").textContent === "How it works"
+    && window.__vnRevivalTranslator.settings().translateInterface === false;
+  const modelHelpLink = shadow.querySelector(".modelHelpLink");
+  const openExternalCalls = window.localHelperCalls
+    .filter((path) => path === "/v1/vnrevival/open-game-page").length;
+  const modelHelpDefaultPrevented = !modelHelpLink.dispatchEvent(new MouseEvent("click", {
+    bubbles: true, cancelable: true
+  }));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const modelHelpUsesSystemBrowser = modelHelpDefaultPrevented
+    && window.localHelperCalls.filter((path) => path === "/v1/vnrevival/open-game-page").length
+      === openExternalCalls + 1
+    && window.openExternalRequests.at(-1)?.gameSlug === "trials-in-tainted-space";
+  const providerOptions = Array.from(shadow.querySelector(".provider").options)
+    .map((option) => [option.value, option.textContent]);
+  const shortcutInsideMainButton = shadow.querySelector(".translate .translateShortcut")?.textContent === "Ctrl+Shift+T"
+    && shadow.querySelector(".translate .translateAction")?.textContent === "Translate"
+    && shadow.querySelector(".translate")?.getAttribute("aria-label") === "Translate (Ctrl+Shift+T)"
+    && !shadow.querySelector(".hotkey");
+  const openAIKeyIsPasswordOnly = shadow.querySelector(".openAICompatibleKey").type === "password"
+    && !Object.keys(localStorage).some((key) => /api.*key/i.test(key));
+  const modelBeforeKey = shadow.querySelector(".openAICompatibleModel").nextElementSibling.classList.contains("modelHelp")
+    && shadow.querySelector(".openAICompatibleModel").nextElementSibling.nextElementSibling.classList.contains("keyRow");
+  const gameTextBeforeMissingKey = document.querySelector("#rich").textContent;
+  shadow.querySelector(".provider").value = "openai-compatible";
+  shadow.querySelector(".provider").dispatchEvent(new Event("change"));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const openAISetupVisible = !shadow.querySelector(".openAICompatibleBox").hidden
+    && !shadow.querySelector(".openAICompatibleStatus")
+    && !shadow.querySelector(".openAICompatibleParametersHint")
+    && shadow.querySelector(".openAICompatiblePreset").options.length === 6;
+  const streamlinedOpenAIControls = !shadow.querySelector(
+    ".openAICompatibleSave,.openAICompatibleRefresh,.openAICompatibleRemove,"
+      + ".openAICompatiblePromptHint,.openAICompatibleNotice"
+  );
+  const openAIModelSelect = shadow.querySelector(".openAICompatibleModel");
+  const modelDisabledUntilRequiredKey = openAIModelSelect.disabled
+    && shadow.querySelector(".keyState").textContent === "API key required";
+  const gameScreenPreservedWithoutKey = document.querySelector("#rich").textContent === gameTextBeforeMissingKey
+    && document.querySelector("#rich").textContent.trim().length > 0;
+  const openAIKeyInput = shadow.querySelector(".openAICompatibleKey");
+  openAIKeyInput.value = "smoke-test-api-key";
+  openAIKeyInput.dispatchEvent(new Event("change"));
+  for (let attempt = 0; attempt < 50 && shadow.querySelector(".keyState").textContent !== "Key saved"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const openAIKeyAutoSaved = window.localHelperCalls.includes("/v1/openai-compatible/key")
+    && openAIKeyInput.value === ""
+    && openAIKeyInput.hidden
+    && shadow.querySelector(".keyState").textContent === "Key saved"
+    && !openAIModelSelect.disabled;
+  const modelOptionValues = Array.from(openAIModelSelect.options).map((option) => option.value);
+  const safeOpenAIModelPicker = openAIModelSelect instanceof HTMLSelectElement
+    && shadow.querySelectorAll(".openAICompatibleModel").length === 1
+    && JSON.stringify(modelOptionValues.slice(1, 5)) === JSON.stringify([
+      "big-pickle", "mimo-v2.5-free", "model-a", "model-b"
+    ])
+    && openAIModelSelect.options[1].textContent.startsWith("Free · ")
+    && openAIModelSelect.options[2].textContent.startsWith("Free · ")
+    && !openAIModelSelect.hasAttribute("list")
+    && !shadow.querySelector("datalist");
+  const savedUnlistedModelIsPlain = openAIModelSelect.value === "glm-5.3-flash"
+    && openAIModelSelect.selectedOptions[0].textContent === "glm-5.3-flash"
+    && Array.from(openAIModelSelect.options)
+      .filter((option) => option.value === "__vnrevival_manual_model__").length === 1
+    && Array.from(openAIModelSelect.options)
+      .some((option) => option.value === "__vnrevival_manual_model__"
+        && option.textContent === "Enter model ID manually…");
+  const statusCallsBeforeModelOpen = window.localHelperCalls
+    .filter((path) => path === "/v1/openai-compatible/status").length;
+  openAIModelSelect.dispatchEvent(new Event("pointerdown"));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const modelListRefreshesOnOpen = window.localHelperCalls
+    .filter((path) => path === "/v1/openai-compatible/status").length
+    === statusCallsBeforeModelOpen + 1;
+  openAIModelSelect.value = "model-b";
+  openAIModelSelect.dispatchEvent(new Event("change"));
+  const openAIModelSelectionSaved = openAIModelSelect.value === "model-b"
+    && JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null")
+      ?.openAICompatibleModel === "model-b";
+  const complexControlTooltips = [
+    ".openAICompatiblePreset", ".openAICompatibleBaseURL", ".openAICompatibleKey",
+    ".openAICompatibleModel", ".openAICompatibleReasoningEffort",
+    ".openAICompatibleConcurrency", ".openAICompatibleAdvancedToggle",
+    ".openAICompatiblePromptToggle", ".openAICompatiblePromptReset",
+    ".openAICompatibleGlossaryToggle", ".openAICompatibleSiteGlossary",
+    ".openAICompatibleGlossary", ".autoToggle", ".screenshotBatch", ".screenshotNumber", ".cacheDelete"
+  ].every((selector) => (shadow.querySelector(selector)?.title || "").length >= 20);
+  const openAIAdvancedToggle = shadow.querySelector(".openAICompatibleAdvancedToggle");
+  const openAIAdvanced = shadow.querySelector(".openAICompatibleAdvanced");
+  const openAIAdvancedInitiallyCollapsed = openAIAdvanced.hidden
+    && getComputedStyle(openAIAdvanced).display === "none"
+    && openAIAdvancedToggle.textContent === "Advanced"
+    && openAIAdvancedToggle.getAttribute("aria-expanded") === "false"
+    && openAIAdvanced.contains(shadow.querySelector(".openAICompatiblePromptToggle"))
+    && openAIAdvanced.contains(shadow.querySelector(".openAICompatibleGlossaryToggle"))
+    && openAIAdvanced.contains(shadow.querySelector(".endpointField"))
+    && openAIAdvanced.contains(shadow.querySelector(".openAICompatibleParameters"));
+  openAIAdvancedToggle.click();
+  const openAIAdvancedOpenedByButton = !openAIAdvanced.hidden
+    && getComputedStyle(openAIAdvanced).display !== "none"
+    && openAIAdvancedToggle.textContent === "Hide advanced"
+    && openAIAdvancedToggle.getAttribute("aria-expanded") === "true";
+  const openAIAdvancedCacheNotice = openAIAdvanced.querySelector(".openAICompatibleAdvancedNotice")
+    ?.textContent === "Changes apply on the next translation. Unaffected cached translations are kept."
+    && getComputedStyle(openAIAdvanced.querySelector(".openAICompatibleAdvancedNotice")).display !== "none";
+  const openAIPromptToggle = shadow.querySelector(".openAICompatiblePromptToggle");
+  const openAIPromptEditor = shadow.querySelector(".openAICompatiblePromptEditor");
+  const openAIPromptInitiallyCollapsed = openAIPromptEditor.hidden
+    && getComputedStyle(openAIPromptEditor).display === "none"
+    && openAIPromptToggle.textContent === "System prompt"
+    && openAIPromptToggle.getAttribute("aria-expanded") === "false";
+  openAIPromptToggle.click();
+  const openAIPromptOpenedByButton = !openAIPromptEditor.hidden
+    && getComputedStyle(openAIPromptEditor).display !== "none"
+    && openAIPromptToggle.textContent === "Hide system prompt"
+    && openAIPromptToggle.getAttribute("aria-expanded") === "true";
+  const openAIPromptInput = shadow.querySelector(".openAICompatiblePrompt");
+  const openAIPromptEditable = openAIPromptInput.value.includes("{targetName}")
+    && openAIPromptInput.value.includes("VRCTXSEP<number>X")
+    && !!shadow.querySelector(".openAICompatiblePromptReset");
+  openAIPromptInput.value = "Translate into {targetName} ({target}) and preserve markers.";
+  openAIPromptInput.dispatchEvent(new Event("change"));
+  const openAIPromptSaved = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null")
+    ?.openAICompatibleSystemPrompt === openAIPromptInput.value;
+  openAIPromptToggle.click();
+  const openAIPromptClosedByButton = openAIPromptEditor.hidden
+    && getComputedStyle(openAIPromptEditor).display === "none"
+    && openAIPromptToggle.textContent === "System prompt"
+    && openAIPromptToggle.getAttribute("aria-expanded") === "false";
+  const openAIGlossaryToggle = shadow.querySelector(".openAICompatibleGlossaryToggle");
+  const openAIGlossaryEditor = shadow.querySelector(".openAICompatibleGlossaryEditor");
+  const openAISiteGlossaryInput = shadow.querySelector(".openAICompatibleSiteGlossary");
+  const openAIGlossaryInput = shadow.querySelector(".openAICompatibleGlossary");
+  const openAIGlossaryInitiallyCollapsed = openAIGlossaryEditor.hidden
+    && getComputedStyle(openAIGlossaryEditor).display === "none"
+    && openAIGlossaryToggle.textContent === "Glossary"
+    && openAIGlossaryToggle.getAttribute("aria-expanded") === "false"
+    && openAISiteGlossaryInput.readOnly
+    && openAISiteGlossaryInput.value === ""
+    && shadow.querySelector(".siteGlossaryStatus").textContent === "Not needed for English"
+    && openAIGlossaryInput.value === ""
+    && openAIGlossaryInput.maxLength === 8000
+    && openAIGlossaryInput.placeholder.includes("source = translation");
+  openAIGlossaryToggle.click();
+  const openAIGlossaryOpenedByButton = !openAIGlossaryEditor.hidden
+    && getComputedStyle(openAIGlossaryEditor).display !== "none"
+    && openAIGlossaryToggle.textContent === "Hide glossary"
+    && openAIGlossaryToggle.getAttribute("aria-expanded") === "true";
+  openAIGlossaryInput.value = "Minstrel = Менестрель";
+  openAIGlossaryInput.dispatchEvent(new Event("change"));
+  const openAIGlossarySaved = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null")
+    ?.openAICompatibleGlossary === openAIGlossaryInput.value;
+  openAIGlossaryToggle.click();
+  const openAIGlossaryClosedByButton = openAIGlossaryEditor.hidden
+    && getComputedStyle(openAIGlossaryEditor).display === "none"
+    && openAIGlossaryToggle.textContent === "Glossary"
+    && openAIGlossaryToggle.getAttribute("aria-expanded") === "false";
+  openAIAdvancedToggle.click();
+  const openAIAdvancedClosedByButton = openAIAdvanced.hidden
+    && getComputedStyle(openAIAdvanced).display === "none"
+    && openAIAdvancedToggle.textContent === "Advanced"
+    && openAIAdvancedToggle.getAttribute("aria-expanded") === "false";
+  openAIAdvancedToggle.click();
+  const reasoningEffortInput = shadow.querySelector(".openAICompatibleReasoningEffort");
+  const concurrencyInput = shadow.querySelector(".openAICompatibleConcurrency");
+  const openAIModelParametersVisible = reasoningEffortInput.options.length === 8
+    && reasoningEffortInput.value === ""
+    && concurrencyInput.options.length === 8
+    && concurrencyInput.value === "4"
+    && !shadow.querySelector(".openAICompatibleVerbosity")
+    && !shadow.querySelector(".openAICompatibleTemperature")
+    && !shadow.querySelector(".openAICompatibleMaxTokens");
+  reasoningEffortInput.value = "high";
+  reasoningEffortInput.dispatchEvent(new Event("change"));
+  concurrencyInput.value = "6";
+  concurrencyInput.dispatchEvent(new Event("change"));
+  const savedModelParameters = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null");
+  const openAIModelParametersSaved = savedModelParameters?.openAICompatibleReasoningEffort === "high"
+    && !("openAICompatibleVerbosity" in savedModelParameters)
+    && savedModelParameters?.openAICompatibleConcurrency === 6
+    && !("openAICompatibleTemperature" in savedModelParameters)
+    && !("openAICompatibleMaxTokens" in savedModelParameters);
+  const openAIHintRemoved = shadow.querySelector(".providerHint").textContent === ""
+    && getComputedStyle(shadow.querySelector(".providerHint")).display === "none";
+  shadow.querySelector(".keyEdit").click();
+  const keyEditDoesNotRevealSecret = !openAIKeyInput.hidden && openAIKeyInput.value === "";
+  shadow.querySelector(".openAICompatiblePreset").value = "custom";
+  shadow.querySelector(".openAICompatiblePreset").dispatchEvent(new Event("change"));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const customEndpointVisible = shadow.querySelector(".endpointField").parentElement === shadow.querySelector(".openAICompatibleBox")
+    && !shadow.querySelector(".openAICompatibleBaseURL").disabled;
+  shadow.querySelector(".openAICompatiblePreset").value = "opencode-go";
+  shadow.querySelector(".openAICompatiblePreset").dispatchEvent(new Event("change"));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  shadow.querySelector(".language").value = "ar";
+  shadow.querySelector(".language").dispatchEvent(new Event("change"));
+  shadow.querySelector(".provider").value = "google";
+  shadow.querySelector(".provider").dispatchEvent(new Event("change"));
+  const googleHintRemoved = shadow.querySelector(".providerHint").textContent === ""
+    && getComputedStyle(shadow.querySelector(".providerHint")).display === "none";
+  const organicAutoToggle = autoCheckbox.closest(".autoToggle")
+    && autoCheckbox.getAttribute("aria-label") === "Automatically translate new screens"
+    && !!shadow.querySelector(".autoCopy .autoTitle")
+    && !!shadow.querySelector(".autoTrack .autoThumb");
+  autoCheckbox.closest(".autoToggle").click();
+  const savedAfterAutoChange = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null");
+  const autoChangeSaved = savedAfterAutoChange && savedAfterAutoChange.autoTranslate === false;
+  const manualModeShowsTranslate = !mainButton.hidden && !mainButton.parentElement.hidden
+    && getComputedStyle(mainButton).display === "flex";
+  autoCheckbox.closest(".autoToggle").click();
+  for (let attempt = 0; attempt < 100
+      && document.getElementById("prefetched-tooltip").textContent.trim() !== "ترجمة"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  for (let attempt = 0; attempt < 100
+      && shadow.querySelector(".translateAction").textContent === "Cancel"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const restoredAutoModeHidesTranslate = mainButton.hidden && mainButton.parentElement.hidden;
+  const autosavedSettings = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null");
+  const removedSettingsButtons = !shadow.querySelector(
+    ".cacheActions,.launcherActions,.settingsActions,.save,.reset,.clearLanguage,.export,.import,.changeExecutable"
+  );
+  const removedBottomHint = !shadow.querySelector(".hint");
+  const collapseButton = shadow.querySelector(".collapseToggle");
+  const panel = shadow.querySelector(".panel");
+  const settingsPanel = shadow.querySelector(".settings");
+  const fullyExpandedPanel = !shadow.querySelector(".gear")
+    && !shadow.querySelector(".barTitle")
+    && getComputedStyle(settingsPanel).display === "block";
+  collapseButton.click();
+  const compactCollapsedHeader = getComputedStyle(panel).width === "36px";
+  const collapsedStateSaved = panel.classList.contains("collapsed")
+    && JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null").collapsed === true
+    && collapseButton.textContent === "+"
+    && compactCollapsedHeader
+    && getComputedStyle(shadow.querySelector(".panelBody")).display === "none";
+  collapseButton.click();
+  const expandedStateSaved = !panel.classList.contains("collapsed")
+    && JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null").collapsed === false
+    && collapseButton.textContent === "−"
+    && getComputedStyle(panel).width === "330px"
+    && getComputedStyle(settingsPanel).display === "block";
+  const contactLinksPresent = shadow.querySelector('.contactIcon.discord')?.href === "https://discord.gg/QgyeWW3Jg"
+    && shadow.querySelector('.contactIcon.telegram')?.href === "https://t.me/VnRevival"
+    && shadow.querySelector('.contactIcon.email')?.getAttribute("href") === "mailto:master1c8@proton.me";
+  autoCheckbox.closest(".autoToggle").click();
+  for (let attempt = 0; attempt < 100
+      && shadow.querySelector(".translateAction").textContent === "Cancel"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  window.__vnRevivalTranslator.showTranslations();
+  const translationPromise = Promise.resolve(window.__vnRevivalTranslator.translateScreen());
+  const cancelStateKeepsShortcut = shadow.querySelector(".translate .translateAction")?.textContent === "Cancel"
+    && shadow.querySelector(".translate .translateShortcut")?.textContent === "Ctrl+Shift+T"
+    && shadow.querySelector(".translate")?.getAttribute("aria-label") === "Cancel (Ctrl+Shift+T)";
+  const outcome = await Promise.race([
+    translationPromise.then(() => "completed"),
+    new Promise((resolve) => setTimeout(() => resolve("timeout"), 1500))
+  ]);
+  const routineSuccessStatusHidden = shadow.querySelector(".status").textContent === ""
+    && shadow.querySelector(".retry").disabled;
+
+  const rich = document.getElementById("rich");
+  const button = document.getElementById("button");
+  const legacy = document.getElementById("legacy");
+  const prefetchedTooltip = document.getElementById("prefetched-tooltip");
+  const nativeSelect = document.getElementById("native-select");
+  const nativeSelectOptionsTranslated = Array.from(nativeSelect.options)
+    .every((option) => option.textContent.trim() === "ترجمة");
+  const prefetchedHoverCard = document.getElementById("prefetched-hover-card");
+  const hiddenHoverCardPrefetched = prefetchedHoverCard.textContent.trim() === "ترجمة"
+    && getComputedStyle(prefetchedHoverCard.closest(".character-hover-card")).display === "none";
+  const translated = {
+    text: rich.textContent.replace(/\s+/g, " ").trim(),
+    direction: rich.getAttribute("dir"),
+    language: rich.getAttribute("lang"),
+    bidi: rich.style.getPropertyValue("unicode-bidi"),
+    lineHeight: rich.style.getPropertyValue("line-height"),
+    fontFamily: rich.style.getPropertyValue("font-family"),
+    buttonHeight: button.style.getPropertyValue("height"),
+    buttonWrap: button.style.getPropertyValue("white-space")
+  };
+  const legacyMigrated = legacy.textContent.trim() === "سطر قديم"
+    && !window.fetchCalls.includes("Legacy line")
+    && !window.smokeCache.has("v1\nar\n811c9dc5\nLegacy line")
+    && window.smokeCache.get("v3\ntits\ngoogle\nar\nLegacy line") === "سطر قديم";
+  const hiddenTooltipPrefetched = prefetchedTooltip.textContent.trim() === "ترجمة"
+    && getComputedStyle(prefetchedTooltip.closest(".tooltip")).display === "none";
+
+  const revealedPanel = document.getElementById("revealed-panel");
+  const revealedLabel = document.getElementById("revealed-label");
+  autoCheckbox.checked = true;
+  autoCheckbox.dispatchEvent(new Event("change"));
+  revealedPanel.style.display = "block";
+  for (let attempt = 0; attempt < 100 && revealedLabel.textContent.trim() !== "ترجمة"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const attributeRevealTranslated = revealedLabel.textContent.trim() === "ترجمة";
+  autoCheckbox.checked = false;
+  autoCheckbox.dispatchEvent(new Event("change"));
+
+  autoCheckbox.closest(".autoToggle").click();
+  const later = document.getElementById("later");
+  later.scrollIntoView();
+  window.smokeIntersectionObservers.forEach((observer) => observer.trigger());
+  for (let attempt = 0; attempt < 100 && later.textContent.trim() !== "ترجمة"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const scrolledTranslation = later.textContent.trim();
+
+  for (let attempt = 0; attempt < 100 && shadow.querySelector(".translateAction").textContent === "Cancel"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const glossaryProvider = shadow.querySelector(".provider");
+  glossaryProvider.value = "openai-compatible";
+  glossaryProvider.dispatchEvent(new Event("change"));
+  for (let attempt = 0; attempt < 50
+      && !openAISiteGlossaryInput.value.includes("Capture = التقاط من الموقع"); attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const siteGlossaryShown = openAISiteGlossaryInput.readOnly
+    && openAISiteGlossaryInput.value === "Capture = التقاط من الموقع\nMinstrel = شاعر الموقع"
+    && shadow.querySelector(".siteGlossaryStatus").textContent === "2 terms loaded"
+    && shadow.querySelector(".localGlossaryLabel").textContent === "Local overrides";
+  shadow.querySelector(".openAICompatiblePromptReset").click();
+  glossaryProvider.value = "google";
+  glossaryProvider.dispatchEvent(new Event("change"));
+  const requestCaptureRemoved = !shadow.querySelector(
+    ".captureBox,.captureStats,.captureToggle,.captureCopy,.captureClear"
+  ) && !window.localHelperCalls.some((path) => path.startsWith("/v1/capture/"));
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+  const repairedMetadata = JSON.parse(localStorage.getItem("tits-translator.cache-meta.v1") || "null");
+  const metadataDirty = localStorage.getItem("tits-translator.cache-meta-dirty.v1");
+  const cacheBox = shadow.querySelector(".cacheBox");
+  const cacheCopyButton = shadow.querySelector(".cacheCopy");
+  const cacheDeleteButton = shadow.querySelector(".cacheDelete");
+  const compactCacheRow = getComputedStyle(cacheBox).display === "grid"
+    && cacheBox.children.length === 3
+    && /^Cache: \d+(?:\.\d+)? (?:B|KB|MB) · Log: 2\.0 KB$/.test(shadow.querySelector(".cacheStats").textContent)
+    && cacheCopyButton.textContent === "Copy log"
+    && cacheDeleteButton.textContent === "Clear cache and log";
+  cacheCopyButton.click();
+  for (let attempt = 0; attempt < 50 && window.smokeClipboard !== "smoke log\n"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const logCopied = window.smokeClipboard === "smoke log\n";
+  cacheDeleteButton.click();
+  for (let attempt = 0; attempt < 50 && shadow.querySelector(".cacheStats").textContent !== "Cache: 0 B · Log: 0 B"; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const cacheDeleted = window.smokeCache.size === 0
+    && window.smokeLogBytes === 0
+    && shadow.querySelector(".cacheStats").textContent === "Cache: 0 B · Log: 0 B"
+    && cacheCopyButton.disabled === true
+    && cacheDeleteButton.disabled === false;
+  const originalButtonRemoved = !shadow.querySelector(".mode");
+
+  const newGameDoesNotExposeLegacyGlobals = window.CoC2TranslationCore === undefined
+    && window.CoC2TranslatorLanguages === undefined
+    && window.__coc2Translator === undefined;
+
+  window.__vnRevivalTranslator.showOriginal();
+  const restored = {
+    text: rich.textContent.replace(/\s+/g, " ").trim(),
+    direction: rich.hasAttribute("dir"),
+    language: rich.hasAttribute("lang"),
+    textAlign: rich.style.getPropertyValue("text-align"),
+    fontFamily: rich.style.getPropertyValue("font-family"),
+    buttonHeight: button.style.getPropertyValue("height"),
+    buttonWrap: button.style.getPropertyValue("white-space")
+  };
+  const nativeSelectOptionsRestored = JSON.stringify(Array.from(nativeSelect.options, (option) => option.textContent.trim()))
+    === JSON.stringify(["Unkempt", "Afro Ponytail"]);
+  const revealedLabelRestored = revealedLabel.textContent.trim() === "Hair Length: 30 inches";
+  const hoverCardRestored = prefetchedHoverCard.textContent.trim() === "Use Default gender logic.";
+
+  const reasoningModelCompatibility = await (async () => {
+    const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
+    autoCheckbox.checked = false;
+    autoCheckbox.dispatchEvent(new Event("change"));
+    change(shadow.querySelector(".provider"), "openai-compatible");
+    change(shadow.querySelector(".openAICompatiblePreset"), "opencode-go");
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const model = shadow.querySelector(".openAICompatibleModel");
+    const effort = shadow.querySelector(".openAICompatibleReasoningEffort");
+    change(model, "model-b");
+    change(effort, "minimal");
+    model.add(new Option("glm-5.3-flash", "glm-5.3-flash"));
+    change(model, "glm-5.3-flash");
+    const migrated = effort.value === "low"
+      && window.__vnRevivalTranslator.settings().openAICompatibleReasoningEffort === "low"
+      && JSON.parse(localStorage.getItem("tits-translator.settings.v2")).openAICompatibleReasoningEffort === "low";
+    const supported = Array.from(effort.options).filter((option) => !option.hidden && !option.disabled).map((option) => option.value);
+    const preserved = ["high", "max", ""].every((value) => {
+      change(effort, value);
+      return effort.value === value;
+    });
+    change(model, "model-b");
+    change(effort, "minimal");
+    const otherModelsUnchanged = effort.value === "minimal" && Array.from(effort.options).every((option) => !option.hidden && !option.disabled);
+    return migrated && JSON.stringify(supported) === JSON.stringify(["", "low", "high", "max"])
+      && preserved && otherModelsUnchanged;
+  })();
+
+  const retryLifecycle = await (async () => {
+    const originalFetch = window.fetch;
+    const retry = shadow.querySelector(".retry");
+    const status = shadow.querySelector(".status");
+    const provider = shadow.querySelector(".provider");
+    const language = shadow.querySelector(".language");
+    const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
+    let reject = true;
+    let requests = 0;
+    window.fetch = async (url, options) => {
+      if (!String(url).endsWith("/v1/openai-compatible/translate")) return originalFetch(url, options);
+      requests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      return reject
+        ? { ok: false, status: 502, json: async () => ({ ok: false, error: "openai_request_failed", providerStatus: 400, message: "Provider returned HTTP 400" }) }
+        : { ok: true, json: async () => ({ ok: true, translatedText: JSON.parse(options.body).text }) };
+    };
+    try {
+      autoCheckbox.checked = false;
+      autoCheckbox.dispatchEvent(new Event("change"));
+      change(provider, "openai-compatible");
+      change(shadow.querySelector(".openAICompatiblePreset"), "opencode-go");
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      change(shadow.querySelector(".openAICompatibleModel"), "model-b");
+      change(language, "ru");
+      interfaceTranslationCheckbox.checked = true;
+      interfaceTranslationCheckbox.dispatchEvent(new Event("change"));
+      window.__vnRevivalTranslator.showTranslations();
+      autoCheckbox.checked = true;
+      autoCheckbox.dispatchEvent(new Event("change"));
+      await window.__vnRevivalTranslator.translateScreen();
+      const rejectedCount = requests;
+      const rejected = rejectedCount > 0 && !retry.disabled
+        && retry.textContent === "Повторить перевод"
+        && status.textContent.includes("Сервис отклонил запрос (HTTP 400)")
+        && status.textContent.includes("Автоперевод приостановлен");
+      const rect = () => {
+        const bounds = retry.getBoundingClientRect();
+        return [bounds.x, bounds.y, bounds.width, bounds.height].join(",");
+      };
+      const failedGeometry = rect();
+      for (const observer of window.smokeIntersectionObservers) observer.trigger();
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const autoStopped = requests === rejectedCount && !retry.disabled;
+      interfaceTranslationCheckbox.checked = false;
+      interfaceTranslationCheckbox.dispatchEvent(new Event("change"));
+      const localized = retry.textContent === "Retry translation"
+        && status.textContent.includes("Automatic translation is paused") && rect() === failedGeometry;
+      reject = false;
+      retry.click();
+      const busy = retry.disabled && rect() === failedGeometry;
+      retry.click(); // A double click cannot cancel the retry or start another batch.
+      for (let attempt = 0; attempt < 100 && shadow.querySelector(".translateAction").textContent === "Cancel"; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      const recovered = requests > rejectedCount && retry.disabled && status.textContent === ""
+        && rect() === failedGeometry;
+      const completedCount = requests;
+      retry.click();
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      return { retryRejected: rejected, retryAutoStopped: autoStopped, retryLocalized: localized, retryBusy: busy, retryRecovered: recovered, retryNoDuplicate: requests === completedCount };
+    } finally {
+      autoCheckbox.checked = false;
+      autoCheckbox.dispatchEvent(new Event("change"));
+      window.fetch = originalFetch;
+    }
+  })();
+
+  const optimization = await window.runOptimizationSmoke(shadow);
+  const screenBlocks = await window.runScreenBlockSmoke(shadow);
+  const lifecycle = await window.runLifecycleSmoke(shadow);
+
+  const sourceLanguageSkipsTranslation = await (async () => {
+    const api = window.__vnRevivalTranslator;
+    const provider = shadow.querySelector(".provider");
+    const language = shadow.querySelector(".language");
+    const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
+    const probe = document.createElement("p");
+    probe.style.cssText = "position:fixed;top:20px;left:0;width:260px;height:30px";
+    probe.textContent = "The source language stays unchanged.";
+    document.body.append(probe);
+    try {
+      autoCheckbox.checked = false;
+      autoCheckbox.dispatchEvent(new Event("change"));
+      change(language, "en");
+      change(provider, "google");
+      const googleRequests = window.fetchCalls.length;
+      await api.translateScreen();
+      const manualSkipped = window.fetchCalls.length === googleRequests;
+
+      change(provider, "openai-compatible");
+      const aiRequests = window.localHelperCalls
+        .filter((path) => path === "/v1/openai-compatible/translate").length;
+      autoCheckbox.checked = true;
+      autoCheckbox.dispatchEvent(new Event("change"));
+      probe.append(document.createTextNode(" New source text."));
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const autoSkipped = window.localHelperCalls
+        .filter((path) => path === "/v1/openai-compatible/translate").length === aiRequests;
+      return manualSkipped && autoSkipped
+        && probe.textContent === "The source language stays unchanged. New source text."
+        && api.settings().language === "en"
+        && shadow.querySelector(".retry").disabled;
+    } finally {
+      autoCheckbox.checked = false;
+      autoCheckbox.dispatchEvent(new Event("change"));
+      probe.remove();
+    }
+  })();
+
+  const screenshotBatchFlow = await (async () => {
+    const api = window.__vnRevivalTranslator;
+    const provider = shadow.querySelector(".provider");
+    const language = shadow.querySelector(".language");
+    const screenshotNumber = shadow.querySelector(".screenshotNumber");
+    const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
+    change(provider, "google");
+    change(language, "en");
+    autoCheckbox.checked = false;
+    autoCheckbox.dispatchEvent(new Event("change"));
+    screenshotNumber.value = "7";
+    const before = api.settings();
+    window.smokeScreenshotRequests.length = 0;
+    window.smokeScreenshotFinishRequests.length = 0;
+    window.smokeScreenshotOpenRequests.length = 0;
+    const result = await api.captureAllLanguages();
+    const expectedLocales = languageOptions.map(([code]) => code);
+    const capturedLocales = window.smokeScreenshotRequests.map((request) => request.locale);
+    const batchIds = new Set(window.smokeScreenshotRequests.map((request) => request.batchId));
+    const after = api.settings();
+    return {
+      screenshotBatchCompletes: result.outcome === "complete" && result.captured === 31,
+      screenshotLocalesCanonical: JSON.stringify(capturedLocales) === JSON.stringify(expectedLocales),
+      screenshotFramesLabelled: window.smokeScreenshotRequests.every((request, index) => request.sequence === index + 1
+        && request.panelHidden && request.visibleLocale === request.locale),
+      screenshotNumberShared: result.screenshotNumber === 7
+        && window.smokeScreenshotRequests.every((request) => request.screenshotNumber === 7),
+      screenshotBatchIdentityStable: batchIds.size === 1 && batchIds.has(result.batchId),
+      screenshotEvidenceFinalized: window.smokeScreenshotFinishRequests.length === 1
+        && window.smokeScreenshotFinishRequests[0].batchId === result.batchId
+        && window.smokeScreenshotFinishRequests[0].outcome === "complete"
+        && window.smokeScreenshotFinishRequests[0].captured === 31
+        && window.smokeScreenshotFinishRequests[0].expected === 31
+        && window.smokeScreenshotFinishRequests[0].settingsRestored === true,
+      screenshotFolderOpened: window.smokeScreenshotOpenRequests.length === 1
+        && window.smokeScreenshotOpenRequests[0].batchId === result.batchId,
+      screenshotStateRestored: before.language === after.language && before.autoTranslate === after.autoTranslate
+        && language.value === "en" && !autoCheckbox.checked,
+      screenshotOverlayCleaned: !shadow.querySelector(".screenshotLocaleBadge")
+        && !shadow.querySelector(".panel").hidden,
+      screenshotButtonLocalized: shadow.querySelector(".screenshotBatch").textContent === "Capture all languages",
+      screenshotCompletionShown: shadow.querySelector(".status").textContent === "Saved 31 screenshots. The folder is open."
+    };
+  })();
+
+  const bootstrapBeforeBodyCreatesOnePanel = await (async () => {
+    const frame = document.createElement("iframe");
+    frame.hidden = true;
+    const loaded = new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
+    frame.src = "runtime-bootstrap-frame.html";
+    document.body.append(frame);
+    try {
+      await loaded;
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      return frame.contentDocument.querySelectorAll("#vnrevival-translator-tits").length === 1
+        && !!frame.contentWindow.__vnRevivalTranslator?.version
+        && !frame.contentWindow.__vnRevivalTranslatorPending;
+    } finally {
+      frame.remove();
+    }
+  })();
+
+  // Keep each expectation once; the reporter lists failed names only.
+  window.smokeReport({
+    randomUUIDFallback: window.smokeRandomUUIDUnavailable === true,
+    abortSignalFallback: window.smokeThrowIfAbortedUnavailable === true,
+    translatedText: translated.text === "ترى امرأة جميلة بالقرب من الباب.",
+    translatedDirection: translated.direction === "rtl",
+    translatedLanguage: translated.language === "ar",
+    translatedBidi: translated.bidi === "plaintext",
+    translatedLineHeight: translated.lineHeight === "1.35",
+    translatedFontFamilyIncludes: translated.fontFamily.includes("Noto Sans Arabic"),
+    translatedButtonHeight: translated.buttonHeight === "auto",
+    translatedButtonWrap: translated.buttonWrap === "normal",
+    scrolledTranslation: scrolledTranslation === "ترجمة",
+    repairedMetadataRecords: repairedMetadata.records === 11,
+    compactCacheRow,
+    logCopied,
+    cacheDeleted,
+    requestCaptureRemoved,
+    originalButtonRemoved,
+    metadataDirty: metadataDirty === null,
+    legacyMigrated,
+    hiddenTooltipPrefetched,
+    hiddenHoverCardPrefetched,
+    nativeSelectOptionsTranslated,
+    attributeRevealTranslated,
+    newGameDoesNotExposeLegacyGlobals,
+    shortcutInsideMainButton,
+    cancelStateKeepsShortcut,
+    routineSuccessStatusHidden,
+    defaultLanguage: defaultLanguage === "en",
+    startsExpanded,
+    sourceLanguageSkipsTranslation,
+    ...screenshotBatchFlow,
+    bootstrapBeforeBodyCreatesOnePanel,
+    defaultAutoTranslate,
+    autoModeHidesTranslate,
+    privacyChoiceRemoved,
+    languageIsTopLevel,
+    interfaceToggleIsClearlyLabelled,
+    compactGooglePanel,
+    stableTranslationFeedback,
+    ...retryLifecycle,
+    ...optimization,
+    ...screenBlocks,
+    ...lifecycle,
+    reasoningModelCompatibility,
+    gameThemeApplied,
+    russianInterfacePresetApplied,
+    englishInterfaceRestored,
+    modelHelpUsesSystemBrowser,
+    languageOptionsLength: languageOptions.length === 31,
+    languageOrderStart: JSON.stringify(languageOptions.slice(0, 2)) === JSON.stringify([
+      ["en", "English"],
+      ["zh", "Chinese (Simplified) (中文（简体）)"]
+    ]),
+    languageOrderEnd: JSON.stringify(languageOptions.at(-1)) === JSON.stringify(["he", "Hebrew (עברית)"]),
+    providerOrder: JSON.stringify(providerOptions) === JSON.stringify([["google", "Google Translate"], ["openai-compatible", "OpenAI-compatible"]]),
+    openAIKeyIsPasswordOnly,
+    modelBeforeKey,
+    panelEventsStayOutOfGame,
+    openAISetupVisible,
+    streamlinedOpenAIControls,
+    modelDisabledUntilRequiredKey,
+    gameScreenPreservedWithoutKey,
+    safeOpenAIModelPicker,
+    savedUnlistedModelIsPlain,
+    modelListRefreshesOnOpen,
+    openAIModelSelectionSaved,
+    complexControlTooltips,
+    openAIAdvancedInitiallyCollapsed,
+    openAIAdvancedOpenedByButton,
+    openAIAdvancedCacheNotice,
+    openAIAdvancedClosedByButton,
+    openAIPromptInitiallyCollapsed,
+    openAIPromptOpenedByButton,
+    openAIPromptEditable,
+    openAIPromptSaved,
+    openAIPromptClosedByButton,
+    openAIGlossaryInitiallyCollapsed,
+    openAIGlossaryOpenedByButton,
+    openAIGlossarySaved,
+    openAIGlossaryClosedByButton,
+    siteGlossaryShown,
+    openAIModelParametersVisible,
+    openAIModelParametersSaved,
+    openAIHintRemoved,
+    openAIKeyAutoSaved,
+    keyEditDoesNotRevealSecret,
+    customEndpointVisible,
+    googleHintRemoved,
+    organicAutoToggle,
+    autoChangeSaved,
+    manualModeShowsTranslate,
+    restoredAutoModeHidesTranslate,
+    autosavedSettingsLanguage: autosavedSettings.language === "ar",
+    autosavedSettingsProvider: autosavedSettings.provider === "google",
+    autosavedSettingsAutoTranslate: autosavedSettings.autoTranslate === true,
+    removedSettingsButtons,
+    removedBottomHint,
+    fullyExpandedPanel,
+    collapsedStateSaved,
+    expandedStateSaved,
+    contactLinksPresent,
+    restoredText: restored.text === "You see a beautiful woman near the door.",
+    restoredDirection: restored.direction === false,
+    restoredLanguage: restored.language === false,
+    restoredTextAlign: restored.textAlign === "",
+    restoredFontFamily: restored.fontFamily === "",
+    restoredButtonHeight: restored.buttonHeight === "",
+    restoredButtonWrap: restored.buttonWrap === "",
+    nativeSelectOptionsRestored,
+    revealedLabelRestored,
+    hoverCardRestored,
+  });
+})();

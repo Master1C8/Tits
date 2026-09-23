@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PENDING</title>
+  <style>
+    body { margin: 20px; }
+    #rich { width: 240px; text-align: left; }
+    #button { width: 120px; height: 20px; white-space: nowrap; }
+    #spacer { height: 1800px; }
+  </style>
+</head>
+<body>
+  <p id="rich">You see <b>a beautiful woman</b> near the door.</p>
+  <button id="button">A very short button</button>
+  <p id="legacy">Legacy line</p>
+  <div class="tooltip" style="display:none"><p id="prefetched-tooltip">A hidden tooltip is ready.</p></div>
+  <label for="native-select">Hairstyle</label>
+  <select id="native-select"><option>Unkempt</option><option>Afro Ponytail</option></select>
+  <div id="revealed-panel" style="display:none;position:fixed;top:100px;left:20px;width:240px;height:80px">
+    <p id="revealed-label">Hair Length: 30 inches</p>
+  </div>
+  <div class="character-hover-card" style="display:none"><p id="prefetched-hover-card">Use Default gender logic.</p></div>
+  <div id="spacer"></div>
+  <p id="later">A later paragraph appears after scrolling.</p>
+  <pre id="result" data-tits-private>PENDING</pre>
+  <script src="runtime/smoke-report.js"></script>
+  <script src="runtime/smoke-setup.js?v=0.10.2"></script>
+  <script src="../src/translation-core.js?v=0.10.2"></script>
+  <script src="../.build/languages.js?v=0.10.2"></script>
+  <script src="../.build/openai-config.js?v=0.10.2"></script>
+  <script src="../src/providers.js?v=0.10.2"></script>
+  <script src="../.build/game-config.js?v=0.10.2"></script>
+  <script src="../src/games/tits/adapter.js?v=0.1.0"></script>
+  <script src="../src/interface-presets.js?v=0.10.2"></script>
+  <script src="../src/panel-view.js?v=0.10.2"></script>
+  <script src="../src/translator-runtime.js?v=0.10.2"></script>
+  <script src="runtime/screen-block-scenario.js"></script>
+  <script src="runtime/optimization-scenario.js"></script>
+  <script src="runtime/lifecycle-scenario.js"></script>
+  <script src="runtime/smoke-scenario.js?v=0.10.2"></script>
+</body>
+</html>
