@@ -135,6 +135,15 @@ Shared technical evidence:
   preserves serious scenes and avoids inventing humor or sexual details.
   User-authored custom prompts remain unchanged. Browser smoke verifies both
   bundled and site-default prompt assembly; live translation review is pending.
+- On 2026-09-24, four completed numbered capture batches (1–4) supplied 124
+  PNGs across the 31 canonical locales. The VN Revival screenshot CLI dry-run
+  initially planned 124 additions, but apply rejected source English as an
+  official-only locale and rolled back. The revised 30-locale set of 120 PNGs
+  was uploaded to the existing `trials-in-tainted-space` production card through
+  `game screenshots sync`; apply reported success and page-cache invalidation.
+  A fresh dry-run verified 0 additions, 0 replacements, and 120 identical
+  skips. English source captures remain local. Game publication, visibility,
+  app deployment, and editorial quality status were not changed by this upload.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|
