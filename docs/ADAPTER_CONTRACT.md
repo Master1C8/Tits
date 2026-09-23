@@ -23,6 +23,11 @@ UI labels without a provider request; it returns `null` for unhandled text. The
 TiTS health-bar labels are isolated in `health-labels.js`. The adapter must
 preserve existing DOM elements, React handlers, links, form values, and save
 surfaces.
+An optional `describeTranslationContext(source, kind, nearby, node)` hook may
+return a short, stable semantic location for a visible fragment. The runtime
+provides only already-filtered nearby source text. The location participates
+in cache identity; nearby text is an untrusted disambiguation hint in AI
+requests, not text to translate. Keep game-specific meanings in the adapter.
 An optional `formatTranslatedElement(element, originalPresentation)` hook may
 adjust game-specific presentation after text replacement; every inline style it
 changes must be tracked and restored by the shared runtime.

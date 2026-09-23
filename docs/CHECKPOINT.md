@@ -113,6 +113,15 @@ Shared technical evidence:
   intentionally not packaged; this is an accidental-use guard, not hardware
   binding or an authentication mechanism. The marker is enabled on this Mac;
   the full test suite and app-only signed macOS build passed on 2026-09-24.
+- Context-aware request handling now supplies each OpenAI-compatible translation
+  request with UI role, semantic location, and bounded nearby visible source
+  text as untrusted user data. The system instruction explicitly translates
+  only the source field, disambiguates by location, and avoids forcing glossary
+  mappings onto unrelated senses. The TiTS adapter identifies the main-menu
+  `Credits` control as staff acknowledgments; short controls use location-aware
+  cache keys, including with Google. Google's text-only endpoint receives no
+  separate context field. The full suite and signed app-only macOS build passed
+  on 2026-09-24; live game recapture/editorial review is pending.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|

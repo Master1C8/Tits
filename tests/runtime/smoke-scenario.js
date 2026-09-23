@@ -840,7 +840,9 @@
     badge.style.cssText = "position:absolute;top:0;left:0;width:20px;height:20px";
     tray.append(button, badge);
     document.body.append(tray);
-    window.smokeCache.set("v3\ntits\ngoogle\nru\nLONG BUTTON LABEL PROBE", "Очень длинная надпись кнопки");
+    window.smokeCache.set(window.VNRevivalTranslationCore.makeCacheKey(
+      "LONG BUTTON LABEL PROBE", "ru", "google", "tits", "context-v1:control:game action button"
+    ), "Очень длинная надпись кнопки");
     const language = shadow.querySelector(".language");
     language.value = "ru";
     language.dispatchEvent(new Event("change"));

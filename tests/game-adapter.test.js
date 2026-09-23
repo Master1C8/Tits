@@ -40,6 +40,13 @@ test("selected DOM adapter satisfies contract version 2", () => {
   }
 });
 
+test("ambiguous menu credits get a context distinct from currency", () => {
+  assert.match(adapter.describeTranslationContext("Credits", "control",
+    ["New Game", "Data", "Options"], null), /staff acknowledgments/);
+  assert.equal(adapter.describeTranslationContext("Credits", "control",
+    ["Buy", "Sell", "Balance"], null), "");
+});
+
 test("model suggestions avoid the Chromium datalist crash path", () => {
   assert.match(panelSource, /<select class="openAICompatibleModel"/);
   assert.doesNotMatch(runtimeSource + panelSource, /openAICompatibleModelSuggestion/);

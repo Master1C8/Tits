@@ -71,6 +71,9 @@ window.runOptimizationSmoke = async function (shadow) {
     checks.batchIndividualCache = window.smokeCache.size === cacheBefore + 12;
     checks.batchScopedPrompt = !requests[0].systemPrompt.includes("Absent term")
       && requests[0].systemPrompt.includes("Optimization fixture")
+      && !requests[0].systemPrompt.includes("nearby source text")
+      && requests[0].context.includes("UI role: control")
+      && requests[0].context.includes("nearby source text")
       && requests[0].modelParameters.reasoningEffort === "minimal";
     const first = metrics.find(event => event.phase === "result");
     checks.screenMetrics = first?.jobs === 12 && first.helper_requests === 1 && first.batch_requests === 1
@@ -169,6 +172,22 @@ window.runOptimizationSmoke = async function (shadow) {
     checks.storyRemainsSeparateAndLogFailureNonfatal = requests.at(-1).diagnostics.kind === "story"
       && requests.at(-1).diagnostics.batch_size === 1 && Number.isInteger(metrics.at(-1).first_story_ms)
       && metrics.at(-1).outcome === "complete" && story.textContent === "Перевод готов";
+    show(["New Game", "Data", "Options"]);
+    await api.translateScreen();
+    const creditsButton = document.createElement("button");
+    creditsButton.textContent = "Credits";
+    area.append(creditsButton);
+    await api.translateScreen();
+    checks.menuCreditsGetsStaffContext = requests.at(-1).text === "Credits"
+      && requests.at(-1).context.includes(
+      "location: main menu navigation; Credits opens staff acknowledgments, not currency"
+      );
+    const currencyStart = requests.length;
+    show(["Buy", "Balance", "Credits"]);
+    await api.translateScreen();
+    checks.currencyCreditsDoesNotReuseMenuCache = requests.length > currencyStart
+      && requests.at(-1).text.includes("Credits")
+      && requests.at(-1).context.includes("location: game controls");
   } finally {
     window.fetch = originalFetch;
     area.remove();

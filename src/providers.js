@@ -70,6 +70,7 @@
           payload = await context.localRequest("/v1/openai-compatible/translate", {
             body: {
               text: context.text,
+              context: context.requestContext || "",
               target: context.language,
               targetName: context.languageName || context.language,
               model: connection.model,

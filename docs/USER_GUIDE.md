@@ -43,6 +43,12 @@ translation request. Machine-generated output is not an editor-reviewed static
 localization. Provider failures must not clear or break the game screen.
 In Hebrew, the Ausar, Kaithrit, Leithan, Gryvain, and Suula choice buttons use
 Hebrew script even when a translation service preserves their Latin names.
+OpenAI-compatible translation now receives the visible fragment's UI role,
+semantic location, and nearby source text as disambiguation hints. The hints
+are not translated or displayed. Google does not accept a separate system
+prompt, so it continues to translate the source text directly. Short control
+labels use context-aware cache entries, preventing a main-menu `Credits`
+translation from being reused as a currency label.
 Long translated stat labels shrink to fit the game's narrow sidebar bars. If a
 label is still too long to remain legible, the bar clips it rather than letting
 it overlap the numeric value.

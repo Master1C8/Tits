@@ -86,6 +86,18 @@
     hasSourceText(value, core) {
       return core.hasEnglishText(value);
     },
+    describeTranslationContext(source, kind, nearby, node) {
+      const label = String(source || "").trim();
+      if (kind === "control" && label === "Credits"
+          && nearby.includes("New Game") && nearby.includes("Options")) {
+        return "main menu navigation; Credits opens staff acknowledgments, not currency";
+      }
+      const element = node?.parentElement;
+      if (element?.closest(".combatOutput")) return "combat log";
+      if (element?.closest(".statBarContainer")) return "character statistics";
+      if (element?.closest(".buttonTrayElementContainer")) return "game action button";
+      return "";
+    },
     localTranslation(source, language, node) {
       if (String(source || "").trim() !== "HP"
           || !node?.parentElement?.matches(".statBarContainer > .statText")) return null;

@@ -25,5 +25,12 @@ base. Cache keys include game, locale, provider, model, prompt, and relevant
 settings. A failed or structurally broken provider response is never cached as
 success.
 
+AI translation requests include a bounded, untrusted context note with the
+fragment's UI role, semantic location, and nearby visible source text. The
+location separates cache entries for short ambiguous controls. Google has no
+separate instruction channel, so its request body remains the exact source
+text; short controls still use context-partitioned cache entries, and known
+semantic locations can be handled by the game adapter.
+
 The project contains no asset extractor, static pack, game payload, provider
 model, or production deployment path.

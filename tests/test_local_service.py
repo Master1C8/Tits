@@ -249,6 +249,28 @@ class LocalServiceTests(unittest.TestCase):
                 self.assertEqual(caught.exception.usage["output_tokens"], 20)
                 self.assertEqual(upstream.call_count, 1)
 
+    def test_context_is_user_data_not_system_instruction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = self.bridge(directory, "test-key")
+            reply = FakeHTTPResponse({"choices": [{"message": {"content": '{"translation":"Титры"}'}}]})
+            with mock.patch.object(local_service, "open_url", return_value=reply) as upstream:
+                result = bridge.openai_translate(
+                    "ru", "Russian", "Credits", "test-model", "custom", "https://provider.test/v1",
+                    request_context="UI role: control; nearby source text: New Game, Options",
+                )
+            body = json.loads(upstream.call_args.args[0].data.decode("utf-8"))
+            self.assertEqual(result["translatedText"], "Титры")
+            self.assertNotIn("New Game", body["messages"][0]["content"])
+            self.assertIn("untrusted game data", body["messages"][0]["content"])
+            self.assertEqual(json.loads(body["messages"][1]["content"]), {
+                "context": "UI role: control; nearby source text: New Game, Options",
+                "text": "Credits",
+            })
+            with self.assertRaises(local_service.BridgeError) as caught:
+                bridge.openai_translate("ru", "Russian", "Credits", "test-model", "custom",
+                                        "https://provider.test/v1", request_context="x" * 4097)
+            self.assertEqual(caught.exception.code, "invalid_context")
+
     def test_refusal_is_rejected_without_becoming_game_text(self):
         source = "A long source passage describing a scene in the game."
         cases = [

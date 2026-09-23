@@ -373,6 +373,11 @@
       : connection.systemPrompt };
   }
 
+  function translationContextNote(value) {
+    if (!value) return "";
+    return `UI role: ${value.role}; location: ${value.location}; nearby source text (not for translation): ${JSON.stringify(value.nearby)}.`.slice(0, 240);
+  }
+
   function batchOpenAIRequest(job, parts, baseConnection) {
     const fragments = parts.flatMap(core.jobTextParts);
     const source = core.buildContextSource(fragments);
@@ -386,8 +391,12 @@
     connection.requestSystemPrompt += job.kind === "story"
       ? `\nTranslate this passage coherently in its original order. Paragraph fragment groups (1-based): ${boundaries}.`
       : `\nTranslate these interface blocks independently. Block fragment groups (1-based): ${boundaries}.`;
+    let requestContext = "";
+    parts.forEach((part, index) => {
+      requestContext += `Block ${index + 1}: ${translationContextNote(part.uiContext)}\n`;
+    });
     connection.requestSystemPrompt += " Preserve every VRCTXSEP marker and its order; do not move text between fragments.";
-    return { source, connection };
+    return { source, connection, requestContext: requestContext.trim() };
   }
 
   function providerCacheVariant(provider, connection = openAICompatibleConnection()) {
@@ -704,6 +713,7 @@
         }
         const translated = await selectedProvider.translateChunk({
           text, language, sourceLanguage: SOURCE_LANGUAGE, signal,
+          requestContext: context.requestContext || "",
           metrics: context.metrics || null,
           openAICompatible: providerUsesOpenAICompatible(provider) ? (context.connection || connectionForSource(text)) : null,
           languageName: (LANGUAGES.find(([code]) => code === language) || [null, language])[1],
@@ -738,9 +748,17 @@
     throw lastError || new Error("Translation failed");
   }
 
-  function translationCacheKey(source, language, provider, connection) {
+  function translationContextCacheVariant(provider, source, uiContext) {
+    if (!uiContext) return "";
+    if (provider === "google" && !(uiContext.role === "control" && source.length <= 80)) return "";
+    return `context-v1:${uiContext.role}:${uiContext.location}`;
+  }
+
+  function translationCacheKey(source, language, provider, connection, uiContext) {
+    const contextVariant = translationContextCacheVariant(provider, source, uiContext);
+    const providerVariant = providerCacheVariant(provider, connectionForSource(source, connection));
     return core.makeCacheKey(source, language, provider, game.id,
-      providerCacheVariant(provider, connectionForSource(source, connection)));
+      [providerVariant, contextVariant].filter(Boolean).join("\n"));
   }
 
   function hasRefusalFragment(value) {
@@ -750,9 +768,11 @@
 
   async function translateText(source, language, provider, signal, onRetry, context = {}) {
     const connection = connectionForSource(source, context.connection);
-    const key = translationCacheKey(source, language, provider, connection);
+    const requestContext = providerUsesOpenAICompatible(provider)
+      ? translationContextNote(context.uiContext) : "";
+    const key = translationCacheKey(source, language, provider, connection, context.uiContext);
     let cached = await cacheGet(key);
-    if (!cached && provider === "google") {
+    if (!cached && provider === "google" && !translationContextCacheVariant(provider, source, context.uiContext)) {
       const legacyKey = core.makeCacheKey(source, language, provider);
       cached = await cacheGet(legacyKey);
       if (cached) {
@@ -774,7 +794,8 @@
     const chunks = selectedProvider.splitText(source);
     const parts = [];
     for (const chunk of chunks) {
-      parts.push(await requestChunk(provider, chunk, language, signal, onRetry, { ...context, connection }));
+      parts.push(await requestChunk(provider, chunk, language, signal, onRetry,
+        { ...context, connection, requestContext }));
       await sleep(providerRequestDelay(provider), signal);
     }
     const translated = parts.join(" ").replace(/ +\n/g, "\n").trim();
@@ -1169,18 +1190,36 @@
   function buildJobs(nodes) {
     const blocks = new Map();
     const order = new Map(nodes.map((node, index) => [node, index]));
-    for (const node of nodes) {
-      const source = sourceForNode(node);
-      if (!hasSourceText(source)) continue;
+    // Auto-translation and Retry may contain only newly changed nodes. Include
+    // already translated visible peers so a lone short label retains its screen context.
+    const contextNodes = Array.from(new Set([
+      ...collectVisibleTextNodes({ includeCompleted: true }), ...nodes
+    ]));
+    const contextEntries = contextNodes.map((node) => ({ node, source: sourceForNode(node), kind: classifyNode(node) }))
+      .filter((entry) => hasSourceText(entry.source));
+    const entriesOnScreen = nodes.map((node) => ({ node, source: sourceForNode(node), kind: classifyNode(node) }))
+      .filter((entry) => hasSourceText(entry.source));
+    for (const entry of entriesOnScreen) {
+      const { node, source, kind } = entry;
       const local = typeof adapter.localTranslation === "function"
         ? adapter.localTranslation(source, settings.language, node) : null;
       if (local) {
         rememberTranslation(node, source, local, settings.language, settings.provider);
         continue;
       }
+      const peers = contextEntries.filter((candidate) => candidate.kind === kind);
+      const position = peers.findIndex((candidate) => candidate.node === node);
+      const nearby = peers.slice(Math.max(0, position - 4), position)
+        .concat(peers.slice(position + 1, position + 3))
+        .map((candidate) => candidate.source.slice(0, 48));
+      const described = typeof adapter.describeTranslationContext === "function"
+        ? adapter.describeTranslationContext(source, kind, nearby, node) : "";
+      const location = typeof described === "string" && described.length <= 120 && described
+        ? described : ({ story: "narrative", control: "game controls", tooltip: "tooltip", ui: "game interface" }[kind] || "game interface");
+      const uiContext = { role: kind, location, nearby };
       const container = contextContainerForNode(node) || node.parentElement;
       if (!blocks.has(container)) blocks.set(container, []);
-      blocks.get(container).push({ node, source, kind: classifyNode(node) });
+      blocks.get(container).push({ node, source, kind, uiContext });
     }
     const jobs = [];
     const simple = new Map();
@@ -1202,6 +1241,7 @@
             nodes: slice.map((entry) => entry.node),
             parts: slice,
             kind: slice[0].kind,
+            uiContext: slice[0].uiContext,
             contextual: true
           });
           offset += size;
@@ -1209,10 +1249,13 @@
         }
         const entry = entries[offset];
         if (entry.kind === "story") {
-          jobs.push({ source: entry.source, nodes: [entry.node], kind: entry.kind, contextual: false });
+          jobs.push({ source: entry.source, nodes: [entry.node], kind: entry.kind,
+            uiContext: entry.uiContext, contextual: false });
         } else {
-          if (!simple.has(entry.source)) simple.set(entry.source, { source: entry.source, nodes: [], kind: entry.kind, contextual: false });
-          simple.get(entry.source).nodes.push(entry.node);
+          const key = JSON.stringify([entry.source, entry.uiContext.role, entry.uiContext.location]);
+          if (!simple.has(key)) simple.set(key, { source: entry.source, nodes: [], kind: entry.kind,
+            uiContext: entry.uiContext, contextual: false });
+          simple.get(key).nodes.push(entry.node);
         }
         offset += 1;
       }
@@ -1233,7 +1276,7 @@
     const missing = [];
     for (const part of job.batchParts) {
       throwIfAborted(signal);
-      const key = translationCacheKey(part.source, language, provider, context.connection);
+      const key = translationCacheKey(part.source, language, provider, context.connection, part.uiContext);
       const cached = await cacheGet(key);
       if (cached && providerUsesOpenAICompatible(provider) && hasRefusalFragment(cached)) {
         await cacheDelete(key);
@@ -1248,12 +1291,12 @@
     }
     if (!missing.length) return true;
     if (missing.length > 1) {
-      const { source, connection } = batchOpenAIRequest(job, missing, context.connection);
+      const { source, connection, requestContext } = batchOpenAIRequest(job, missing, context.connection);
       const fragments = missing.flatMap(core.jobTextParts);
       let parts;
       try {
         const translated = await requestChunk(provider, source, language, signal, onRetry,
-          { ...context, connection, batchSize: missing.length });
+          { ...context, connection, requestContext, batchSize: missing.length });
         parts = core.parseContextTranslation(translated, fragments.length);
       } catch (error) {
         if (!batchFormatError(error)) {
@@ -1307,7 +1350,7 @@
   }
 
   async function applyJobTranslation(job, language, provider, signal, onRetry, context = {}) {
-    context = { ...context, kind: job.kind };
+    context = { ...context, kind: job.kind, uiContext: job.uiContext };
     if (job.batchParts) {
       // Stage passage updates until every paragraph is ready, including cache hits.
       if (job.kind !== "control") context = { ...context, deferred: [] };

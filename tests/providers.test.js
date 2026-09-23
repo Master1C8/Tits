@@ -59,7 +59,7 @@ test("OpenAI-compatible delegates endpoint profile and model without exposing it
   assert.equal(translated, "Привет");
   assert.equal(request.path, "/v1/openai-compatible/translate");
   assert.deepEqual(request.options.body, {
-    text: "Hello", target: "ru", targetName: "Russian", model: "provider/model",
+    text: "Hello", context: "", target: "ru", targetName: "Russian", model: "provider/model",
     preset: "openrouter", baseURL: "https://openrouter.ai/api/v1",
     systemPrompt: "Translate into {targetName} ({target}).\n\nGlossary:\nMinstrel = Менестрель",
     modelParameters: { reasoningEffort: "high", verbosity: "low" }
