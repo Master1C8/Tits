@@ -15,8 +15,10 @@ bundle identifier, site slug, or cache namespace. Those values live under
 
 `adapter.js` exposes contract version 2 with private selectors, story/control/
 tooltip categories, context containers, `getGameVersion(window)`, and
-`hasSourceText(text, core)`. It must preserve existing DOM elements, React
-handlers, links, form values, and save surfaces.
+`hasSourceText(text, core)`. Its optional `normalizeControlTranslation(source,
+translation, language)` hook can enforce a game-specific label after a provider
+response; it must leave unrelated controls unchanged. The adapter must preserve
+existing DOM elements, React handlers, links, form values, and save surfaces.
 
 The observed TiTS 0.9.165 surfaces include `.mainTextContainer`, `.mainText`,
 `.combatOutput`, `.tooltipWrapper`, `.tooltipBody`, `.mailText`, controls, and

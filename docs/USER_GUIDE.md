@@ -28,6 +28,8 @@ Keychain or Windows Credential Manager through an authenticated loopback helper.
 When English is selected, the translator shows the original and sends no
 translation request. Machine-generated output is not an editor-reviewed static
 localization. Provider failures must not clear or break the game screen.
+In Hebrew, the Ausar, Kaithrit, Leithan, Gryvain, and Suula choice buttons use
+Hebrew script even when a translation service preserves their Latin names.
 
 If the panel does not appear, close TiTS completely and launch it through the
 translator again. Keep the whole Windows package together; do not move only the

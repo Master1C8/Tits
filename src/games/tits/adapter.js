@@ -1,6 +1,14 @@
 (function (root) {
   "use strict";
 
+  const hebrewControlLabels = Object.freeze({
+    Ausar: "אוסאר",
+    Kaithrit: "קייתריט",
+    Leithan: "לייתן",
+    Gryvain: "גריוויין",
+    Suula: "סולה"
+  });
+
   const adapter = Object.freeze({
     contractVersion: 2,
     privateSelectors: Object.freeze([
@@ -23,6 +31,12 @@
     },
     hasSourceText(value, core) {
       return core.hasEnglishText(value);
+    },
+    normalizeControlTranslation(source, translation, language) {
+      if (language !== "he") return translation;
+      const label = String(source || "").trim();
+      return Object.prototype.hasOwnProperty.call(hebrewControlLabels, label)
+        ? hebrewControlLabels[label] : translation;
     }
   });
 

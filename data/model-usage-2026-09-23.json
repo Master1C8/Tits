@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "application",
+      "task": "TiTS translator and installer engineering",
+      "model": "gpt-5.6-sol",
+      "provider": "OpenAI Codex",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row A1; Codex session 01a0cd23-2a60-7a70-b896-19684334fb19 token_count events",
+      "inputTokens": 23229368,
+      "cachedInputTokens": 22952576,
+      "outputTokens": 57187,
+      "reasoningTokens": 18076
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "runtime-visual-qa",
+      "task": "TiTS macOS and Windows runtime testing",
+      "model": "gpt-5.6-sol",
+      "provider": "OpenAI Codex",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row Q1; Codex session 01a0cd23-2a60-7a70-b896-19684334fb19 token_count events",
+      "inputTokens": 30573448,
+      "cachedInputTokens": 30273536,
+      "outputTokens": 65585,
+      "reasoningTokens": 28032
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "other",
+      "task": "TiTS GitHub setup check",
+      "model": "gpt-6-sol",
+      "provider": "OpenAI Codex",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row G1; Codex session 01a0cd23-2a60-7a70-b896-19684334fb19 token_count events",
+      "inputTokens": 228865,
+      "cachedInputTokens": 158592,
+      "outputTokens": 956,
+      "reasoningTokens": 479,
+      "notes": "Read-only setup check; GitHub authentication was invalid, so no repository was created."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "other",
+      "task": "TiTS 0.1.1 button fix and usage audit",
+      "model": "gpt-6-sol",
+      "provider": "OpenAI Codex",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row M1; Codex session 01a0cd23-2a60-7a70-b896-19684334fb19 token_count events",
+      "inputTokens": 5748703,
+      "cachedInputTokens": 5641984,
+      "outputTokens": 18314,
+      "reasoningTokens": 10101,
+      "notes": "Application maintenance and usage accounting share one active task; the request telemetry cannot separate them."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "application",
+      "task": "Automated review of TiTS engineering actions",
+      "model": "codex-auto-review",
+      "provider": "Codex Desktop internal",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row A2; Codex guardian sessions 01a0cd2c, 01a0cd2f, 01a0cd50",
+      "inputTokens": 472111,
+      "cachedInputTokens": 342784,
+      "outputTokens": 1532,
+      "reasoningTokens": 760,
+      "notes": "Measured platform review overhead; this internal model has no verified public API rate."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "runtime-visual-qa",
+      "task": "Automated review of TiTS runtime QA actions",
+      "model": "codex-auto-review",
+      "provider": "Codex Desktop internal",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row Q2; Codex guardian sessions 01a0cd50, 01a0cd9b",
+      "inputTokens": 11993950,
+      "cachedInputTokens": 11387136,
+      "outputTokens": 10892,
+      "reasoningTokens": 3757,
+      "notes": "Measured platform review overhead; this internal model has no verified public API rate."
+    },
+    {
+      "usageDate": "2026-09-23",
+      "taskType": "other",
+      "task": "Automated review of TiTS maintenance actions",
+      "model": "codex-auto-review",
+      "provider": "Codex Desktop internal",
+      "usageSource": "TiTS docs/MODEL_USAGE_AUDIT.md row M2; Codex guardian session 01a0cdb5",
+      "inputTokens": 106053,
+      "cachedInputTokens": 82944,
+      "outputTokens": 490,
+      "reasoningTokens": 270,
+      "notes": "Measured platform review overhead; this internal model has no verified public API rate."
+    }
+  ]
+}

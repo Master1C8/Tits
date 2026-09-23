@@ -693,8 +693,32 @@
     }
   })();
 
+  const hebrewSpeciesChoiceLabel = await (async () => {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;top:80px;left:20px;display:flex;gap:8px";
+    const choice = document.createElement("button");
+    choice.textContent = "Ausar";
+    const story = document.createElement("span");
+    story.textContent = "Ausar";
+    probe.append(choice, story);
+    document.body.append(probe);
+    const language = shadow.querySelector(".language");
+    language.value = "he";
+    language.dispatchEvent(new Event("change"));
+    window.__vnRevivalTranslator.showTranslations();
+    try {
+      await window.__vnRevivalTranslator.translateScreen();
+      return choice.textContent === "אוסאר" && story.textContent === "ترجمة";
+    } finally {
+      probe.remove();
+      language.value = "en";
+      language.dispatchEvent(new Event("change"));
+    }
+  })();
+
   // Keep each expectation once; the reporter lists failed names only.
   window.smokeReport({
+    hebrewSpeciesChoiceLabel,
     randomUUIDFallback: window.smokeRandomUUIDUnavailable === true,
     abortSignalFallback: window.smokeThrowIfAbortedUnavailable === true,
     translatedText: translated.text === "ترى امرأة جميلة بالقرب من الباب.",

@@ -1048,6 +1048,9 @@
       context.deferred.push([node, source, translation, language, provider, context, dependencySource]);
       return;
     }
+    if (classifyNode(node) === "control" && typeof adapter.normalizeControlTranslation === "function") {
+      translation = adapter.normalizeControlTranslation(source, translation, language);
+    }
     applied.set(node, { source, translation, language, provider, dependencySource });
     appliedNodes.add(node);
     if (settings.mode === "translated") {

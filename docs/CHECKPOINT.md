@@ -12,14 +12,14 @@ structure and remains `needs-review` unless separate evidence is supplied.
 
 Shared technical evidence:
 
-- Full suite: `./scripts/test-tits.sh --quiet` passed on 2026-09-23 (37 Node
+- Full suite: `./scripts/test-tits.sh --quiet` passed on 2026-09-23 (38 Node
   checks, 69 Python checks, browser smoke, 31-language source verification).
-- macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.0.zip`,
-  385,056 bytes, SHA-256
-  `f0ba3b1d982a3609236b004dbfe4ec8132d3e217ca591276999ea45195c530b2`.
-- Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.0.zip`,
-  11,458,373 bytes, SHA-256
-  `8bc3cb558e46c460271f2b35574171022773afac32e43a32e8a6cd80aa45f5c6`.
+- macOS archive: `launcher/READY_TO_SHARE/TiTS-Translator-macOS-0.1.1.zip`,
+  385,305 bytes, SHA-256
+  `918348712f6bb4399779d2b952244f88785dd4a48426a04d6e21e375f211e2e6`.
+- Windows archive: `launcher/READY_TO_SHARE/TiTS-Translator-Windows-0.1.1.zip`,
+  11,458,624 bytes, SHA-256
+  `04e533622db97ba2cc6044e1a371e08040a8e4031bded2e740e997c765ddedfc`.
 - `./scripts/build-tits.sh` passed archive checksum, universal macOS controller,
   Windows PE32+ x86-64, signing-integrity, package-content, and product gates.
 - Official game archive inspection passed. A clean real macOS launch, local
@@ -37,6 +37,18 @@ Shared technical evidence:
   was verified through a temporary guest-only host proxy and the Windows proxy
   setting was restored afterward. Repair VM networking before the next live
   provider test.
+- Version `0.1.1` adds a TiTS-specific Hebrew control-label correction for the
+  five species choices shown in the owner's race-selection screenshot. The
+  translator had collected these buttons, but the Hebrew site glossary kept
+  their names in Latin script. The correction is confined to exact control
+  labels; story text, tooltips, other controls, and other locales retain their
+  provider output. Browser smoke and adapter checks passed; the updated build
+  has not yet been reinstalled into the live game.
+- The measured 2026-09-23 model-usage snapshot is recorded in
+  `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
+  sync is pending: the guarded site CLI stopped before dry-run because the
+  running SiteForMods revision differs from local `main` and requires a separate
+  owner-authorized production deployment.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|
