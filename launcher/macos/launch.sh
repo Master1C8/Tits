@@ -43,17 +43,7 @@ show_error() {
 }
 
 game_main_running() {
-  ps -ax -o command= | VNREVIVAL_GAME_EXECUTABLE="$MAC_GAME_EXECUTABLE" /usr/bin/awk '
-    BEGIN { marker="/Contents/MacOS/" ENVIRON["VNREVIVAL_GAME_EXECUTABLE"] }
-    $0 !~ /--type=/ {
-      start=index($0, marker)
-      if (start) {
-        following=substr($0, start + length(marker), 1)
-        if (following == "" || following == " ") found=1
-      }
-    }
-    END { exit !found }
-  '
+  /usr/bin/pgrep -x "$MAC_GAME_EXECUTABLE" >/dev/null 2>&1
 }
 
 choose_game_application() {
