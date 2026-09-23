@@ -30,7 +30,7 @@ Shared technical evidence:
   Russian selection, Google-backed main-menu translation, and visual review on
   2026-09-23. The game must be extracted to the VM-local drive; Electron did
   not start reliably from the Parallels shared macOS filesystem.
-- Windows QA evidence is retained locally at
+- Windows QA evidence was originally captured at
   `.build/windows-qa/windows-russian-translated.png` (SHA-256
   `68a05709cb947d9813f15ff2371716a956a8ef86ff8c51cd0b2648bdad361efa`).
   Parallels shared NAT had no outbound route during the run, so provider access
@@ -61,7 +61,7 @@ Shared technical evidence:
 - The TiTS stat-bar presentation now shrinks translated labels within the
   available space and clips only when they still cannot fit, keeping numeric
   values visible. Unit and browser smoke checks passed. The existing 0.1.3
-  screenshots predate this change; live visual recapture is pending.
+  screenshots predated this change; live visual recapture is pending.
 - Follow-up screenshot defects are corrected in the source checkout: compact
   `PHY`/`REF`/`AIM`/`INT`/`WIL`/`LIB` labels retain their exact game abbreviations;
   tray-button text wraps inside the button without covering its hotkey badge;
@@ -70,8 +70,13 @@ Shared technical evidence:
   resets the game text pane to a deterministic edge, and clears pointer hover
   before recording. A refusal leaves source text visible and marks that locale's
   capture as failed rather than presenting a false translation. The full suite
-  passes, but the existing screenshots still predate these fixes and live visual
-  recapture/review remains pending. No new release archive was built.
+  passes, but live visual recapture/review remains pending. No new release
+  archive was built.
+- On 2026-09-23, the owner requested removal of all TiTS screenshots. The 159
+  generated gameplay PNGs (seven batches, including one empty batch folder)
+  and 10 Windows QA PNGs were moved to the macOS Trash under
+  `TiTS-screenshots-20260923`; no screenshot evidence remains in the translator
+  output directory or project QA folder. Game artwork and app icons were kept.
 - The measured 2026-09-23 model-usage snapshot is recorded in
   `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
   sync is pending: the guarded site CLI stopped before dry-run because the
