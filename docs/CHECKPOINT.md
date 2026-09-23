@@ -24,12 +24,23 @@ Shared technical evidence:
   Windows PE32+ x86-64, signing-integrity, package-content, and product gates.
 - Official game archive inspection passed. A clean real macOS launch, local
   helper startup, CDP attachment, and visible translator-panel check passed on
-  2026-09-23. Provider-backed translation, language-specific runtime checks,
-  and visual QA remain `not-run`.
+  2026-09-23.
+- Windows 11 ARM in Parallels passed a clean local-drive launch of the official
+  `TiTS-public-0.9.165-win.zip`, helper startup, CDP attachment, panel injection,
+  Russian selection, Google-backed main-menu translation, and visual review on
+  2026-09-23. The game must be extracted to the VM-local drive; Electron did
+  not start reliably from the Parallels shared macOS filesystem.
+- Windows QA evidence is retained locally at
+  `.build/windows-qa/windows-russian-translated.png` (SHA-256
+  `68a05709cb947d9813f15ff2371716a956a8ef86ff8c51cd0b2648bdad361efa`).
+  Parallels shared NAT had no outbound route during the run, so provider access
+  was verified through a temporary guest-only host proxy and the Windows proxy
+  setting was restored afterward. Repair VM networking before the next live
+  provider test.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|
-| en | source mode | source 188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Complete static build checks; authorize live QA separately |
+| en | source mode | source 188 | needs-review | not-applicable | not-applicable | passed | passed | not-run | not-run | Expand runtime coverage beyond launch and panel injection |
 | ar | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | bg | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | cs | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
@@ -51,7 +62,7 @@ Shared technical evidence:
 | pl | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | pt-BR | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | ro | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
-| ru | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
+| ru | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | passed | passed | not-run | Main menu passed on Windows; expand story, tooltip, and combat coverage |
 | sr | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | sw | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | th | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
@@ -61,5 +72,6 @@ Shared technical evidence:
 | zh | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 | zh-TW | real-time | 188/188 | needs-review | not-applicable | not-applicable | passed | not-run | not-run | not-run | Same shared app gate |
 
-Source-app mutation, real installation, runtime launch, visual QA, publication,
-upload, and deployment are not authorized by this checkpoint.
+This checkpoint records the authorized macOS and Windows runtime work above.
+Further source-app mutation, broader visual QA, publication, upload, and
+deployment are not authorized by this checkpoint.
