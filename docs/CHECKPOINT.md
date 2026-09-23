@@ -130,6 +130,11 @@ Shared technical evidence:
   exact previous bundled default while preserving user-authored prompts.
   Automated checks cover the prompt and request context; live translation
   quality remains unverified.
+- The TiTS manifest now adds a short parody/sci-fi/NSFW setting to the default
+  AI system prompt, including site-provided locale defaults. It explicitly
+  preserves serious scenes and avoids inventing humor or sexual details.
+  User-authored custom prompts remain unchanged. Browser smoke verifies both
+  bundled and site-default prompt assembly; live translation review is pending.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|

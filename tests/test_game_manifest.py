@@ -28,6 +28,19 @@ class GameManifestTests(unittest.TestCase):
         self.assertEqual(manifest["id"], "tits")
         self.assertEqual(manifest["siteSlug"], "trials-in-tainted-space")
         self.assertEqual(manifest["steamAppId"], 0)
+        self.assertIn("parody science-fiction RPG", manifest["translationSetting"])
+
+    def test_translation_setting_is_game_owned_and_bounded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = copy.deepcopy(self.valid)
+            path = self.write_manifest(directory, value)
+            output = Path(directory) / "game-config.js"
+            subprocess.run(["python3", str(ROOT / "scripts/generate-game-config.py"), str(path), str(output)], check=True)
+            self.assertIn('"translationSetting":', output.read_text(encoding="utf-8"))
+            for invalid in (None, "", "x" * 501, ["adult RPG"]):
+                value["translationSetting"] = invalid
+                with self.subTest(setting=invalid), self.assertRaises(ValueError):
+                    MODULE.load_manifest(self.write_manifest(directory, value))
 
     def test_site_slug_is_required_and_safe(self):
         with tempfile.TemporaryDirectory() as directory:

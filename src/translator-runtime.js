@@ -324,7 +324,9 @@
   }
 
   function siteDefaultSystemPrompt(language = settings.language) {
-    return String(siteTranslationConfig(language)?.systemPrompt || OPENAI_COMPATIBLE_DEFAULT_SYSTEM_PROMPT).trim();
+    const prompt = String(siteTranslationConfig(language)?.systemPrompt || OPENAI_COMPATIBLE_DEFAULT_SYSTEM_PROMPT).trim();
+    const setting = String(game.translationSetting || "").trim();
+    return setting && !prompt.includes(setting) ? `${prompt}\n\nGame background: ${setting}` : prompt;
   }
 
   function selectedSystemPrompt(language = settings.language) {

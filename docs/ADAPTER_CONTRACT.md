@@ -12,6 +12,8 @@ bundle identifier, site slug, or cache namespace. Those values live under
 - Windows executable identity and optional Steam AppID (`0` means non-Steam);
 - native macOS game bundle identifier and executable;
 - translator bundle identity, icons, archive names, and panel theme.
+- an optional short translation setting appended to the default AI system
+  prompt, including a locale-specific prompt loaded from the site.
 
 `adapter.js` exposes contract version 2 with private selectors, story/control/
 tooltip categories, context containers, `getGameVersion(window)`, and

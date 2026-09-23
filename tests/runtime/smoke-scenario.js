@@ -231,6 +231,8 @@
     && openAIPromptToggle.textContent === "Hide system prompt"
     && openAIPromptToggle.getAttribute("aria-expanded") === "true";
   const openAIPromptInput = shadow.querySelector(".openAICompatiblePrompt");
+  const gameBackgroundInDefaultPrompt = openAIPromptInput.value.includes(
+    `Game background: ${window.VNRevivalGameConfig.translationSetting}`);
   const oldDefaultPromptMigrated = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null")
     ?.openAICompatibleSystemPrompt === window.VNRevivalOpenAICompatibleConfig.defaultSystemPrompt
     && !openAIPromptInput.value.includes("Credits in a main menu");
@@ -444,6 +446,9 @@
     && shadow.querySelector(".siteGlossaryStatus").textContent === "2 terms loaded"
     && shadow.querySelector(".localGlossaryLabel").textContent === "Local overrides";
   shadow.querySelector(".openAICompatiblePromptReset").click();
+  const gameBackgroundInSitePrompt = shadow.querySelector(".openAICompatiblePrompt").value.includes(
+    `REMOTE SITE PROMPT for {targetName} ({target})`) && shadow.querySelector(".openAICompatiblePrompt").value.includes(
+    `Game background: ${window.VNRevivalGameConfig.translationSetting}`);
   glossaryProvider.value = "google";
   glossaryProvider.dispatchEvent(new Event("change"));
   const requestCaptureRemoved = !shadow.querySelector(
@@ -533,9 +538,12 @@
     const change = (element, value) => { element.value = value; element.dispatchEvent(new Event("change")); };
     let reject = true;
     let requests = 0;
+    let gameBackgroundSent = false;
     window.fetch = async (url, options) => {
       if (!String(url).endsWith("/v1/openai-compatible/translate")) return originalFetch(url, options);
       requests += 1;
+      gameBackgroundSent ||= JSON.parse(options.body).systemPrompt.includes(
+        `Game background: ${window.VNRevivalGameConfig.translationSetting}`);
       await new Promise((resolve) => setTimeout(resolve, 25));
       return reject
         ? { ok: false, status: 502, json: async () => ({ ok: false, error: "openai_request_failed", providerStatus: 400, message: "Provider returned HTTP 400" }) }
@@ -584,7 +592,7 @@
       const completedCount = requests;
       retry.click();
       await new Promise((resolve) => setTimeout(resolve, 80));
-      return { retryRejected: rejected, retryAutoStopped: autoStopped, retryLocalized: localized, retryBusy: busy, retryRecovered: recovered, retryNoDuplicate: requests === completedCount };
+      return { retryRejected: rejected, retryAutoStopped: autoStopped, retryLocalized: localized, retryBusy: busy, retryRecovered: recovered, retryNoDuplicate: requests === completedCount, gameBackgroundSent };
     } finally {
       autoCheckbox.checked = false;
       autoCheckbox.dispatchEvent(new Event("change"));
@@ -993,6 +1001,7 @@
     openAIAdvancedClosedByButton,
     openAIPromptInitiallyCollapsed,
     openAIPromptOpenedByButton,
+    gameBackgroundInDefaultPrompt,
     oldDefaultPromptMigrated,
     openAIPromptEditable,
     openAIPromptSaved,
@@ -1002,6 +1011,7 @@
     openAIGlossarySaved,
     openAIGlossaryClosedByButton,
     siteGlossaryShown,
+    gameBackgroundInSitePrompt,
     openAIModelParametersVisible,
     openAIModelParametersSaved,
     openAIHintRemoved,

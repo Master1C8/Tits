@@ -34,6 +34,8 @@ def main() -> int:
     }
     if "theme" in manifest:
         runtime_fields["theme"] = manifest["theme"]
+    if "translationSetting" in manifest:
+        runtime_fields["translationSetting"] = manifest["translationSetting"]
     if "legacyCompatibility" in manifest:
         runtime_fields["legacyCompatibility"] = manifest["legacyCompatibility"]
     payload = json.dumps(runtime_fields, ensure_ascii=True, separators=(",", ":"))

@@ -21,6 +21,7 @@ test("selected game manifest supplies universal runtime identity", () => {
   assert.match(manifest.siteSlug, /^[a-z0-9][a-z0-9-]*$/);
   assert.ok(manifest.supportedVersions.includes("0.9.165"));
   assert.ok(manifest.translatorName);
+  assert.match(manifest.translationSetting, /parody science-fiction RPG.*NSFW sexual content/);
   assert.ok(manifest.storageNamespace);
   assert.ok(manifest.windowsExecutable.toLowerCase().endsWith(".exe"));
   assert.equal(manifest.macGameBundleIdentifier, "com.fenoxo.tits");

@@ -59,6 +59,9 @@ def load_manifest(path: Path) -> dict:
         raise ValueError("siteSlug must use lowercase ASCII letters, digits, and hyphens")
     if value["sourceLanguage"] != "en":
         raise ValueError("sourceLanguage must be en in contract version 1")
+    setting = value.get("translationSetting")
+    if "translationSetting" in value and (not isinstance(setting, str) or not setting.strip() or len(setting) > 500):
+        raise ValueError("translationSetting must be a non-empty string of at most 500 characters")
     if value["launchStrategy"] != "electron-cdp":
         raise ValueError("unsupported launchStrategy")
     if value["steamAppId"] < 0:

@@ -2,7 +2,7 @@
 
 ```text
 src/games/tits/game.json
-  -> game identity, launch metadata, strict CDP target matchers
+  -> game identity, launch metadata, strict CDP target matchers, translation setting
 TiTS Translator.app / TiTS Translator.exe
   -> starts the official public Electron game with loopback CDP
   -> starts an authenticated loopback credential/provider helper
@@ -27,7 +27,9 @@ success.
 
 AI translation requests include a bounded, untrusted context note with the
 fragment's UI role, semantic location, and nearby visible source text. The
-location separates cache entries for short ambiguous controls. Google has no
+game-specific setting is appended to the default system prompt, including
+locale defaults from the site, without changing user-authored custom prompts.
+The location separates cache entries for short ambiguous controls. Google has no
 separate instruction channel, so its request body remains the exact source
 text; short controls still use context-partitioned cache entries, and known
 semantic locations can be handled by the game adapter.
