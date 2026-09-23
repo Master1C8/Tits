@@ -725,8 +725,56 @@
     }
   })();
 
+  const translatedStatBarFits = await (async () => {
+    const bar = document.createElement("div");
+    bar.className = "statBarContainer";
+    bar.style.cssText = "position:fixed;top:80px;left:20px;width:150px;height:30px;display:flex";
+    const label = document.createElement("div");
+    label.className = "statText";
+    label.style.cssText = "position:absolute;left:0;display:flex;white-space:nowrap;font-size:24px";
+    label.textContent = "STAT LABEL PROBE";
+    const value = document.createElement("div");
+    value.className = "statValue";
+    value.style.cssText = "position:absolute;right:0;font-size:24px";
+    value.textContent = "100";
+    bar.append(label, value);
+    document.body.append(bar);
+    window.smokeCache.set("v3\ntits\ngoogle\nar\nSTAT LABEL PROBE", "إحصائية مترجمة طويلة للغاية");
+    const language = shadow.querySelector(".language");
+    const provider = shadow.querySelector(".provider");
+    provider.value = "google";
+    provider.dispatchEvent(new Event("change"));
+    language.value = "ar";
+    language.dispatchEvent(new Event("change"));
+    window.__vnRevivalTranslator.showTranslations();
+    try {
+      await window.__vnRevivalTranslator.translateScreen();
+      const translated = label.textContent === "إحصائية مترجمة طويلة للغاية"
+        && Number.parseFloat(getComputedStyle(label).fontSize) < 24
+        && label.getBoundingClientRect().right <= value.getBoundingClientRect().left - 5
+        && getComputedStyle(label).overflow === "hidden"
+        && getComputedStyle(label).textOverflow === "ellipsis";
+      bar.style.width = "120px";
+      dispatchEvent(new Event("resize"));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const resized = label.getBoundingClientRect().right <= value.getBoundingClientRect().left - 5;
+      window.__vnRevivalTranslator.showOriginal();
+      const restored = label.textContent === "STAT LABEL PROBE"
+        && label.style.getPropertyValue("max-width") === ""
+        && label.style.getPropertyValue("overflow") === ""
+        && label.style.getPropertyValue("font-size") === "24px"
+        && label.style.getPropertyValue("display") === "flex";
+      return translated && resized && restored;
+    } finally {
+      bar.remove();
+      language.value = "en";
+      language.dispatchEvent(new Event("change"));
+    }
+  })();
+
   // Keep each expectation once; the reporter lists failed names only.
   window.smokeReport({
+    translatedStatBarFits,
     hebrewSpeciesChoiceLabel,
     randomUUIDFallback: window.smokeRandomUUIDUnavailable === true,
     abortSignalFallback: window.smokeThrowIfAbortedUnavailable === true,

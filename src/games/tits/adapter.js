@@ -9,6 +9,36 @@
     Suula: "סולה"
   });
 
+  function fitTranslatedStatLabel(element, original) {
+    if (!element.matches(".statBarContainer > .statText")) return;
+    const bar = element.parentElement;
+    const value = bar.querySelector(":scope > .statValue");
+    const barWidth = bar.getBoundingClientRect().width;
+    const valueWidth = value && value.getBoundingClientRect().width;
+    const baseSize = Number.parseFloat(original.computedFontSize);
+    if (!barWidth || !valueWidth || !baseSize) return;
+
+    // TiTS positions both strings absolutely in a one-line bar. Wrapping cannot
+    // prevent a translated name from painting over the numeric value.
+    const available = Math.max(0, barWidth - valueWidth - 6);
+    if (!available) return;
+    element.style.setProperty("display", "block", "important");
+    element.style.setProperty("white-space", "nowrap", "important");
+    element.style.setProperty("max-width", `calc(100% - ${valueWidth + 6}px)`, "important");
+    element.style.setProperty("overflow", "hidden", "important");
+    element.style.setProperty("text-overflow", "ellipsis", "important");
+    element.style.setProperty("font-size", `${baseSize}px`, "important");
+
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const textWidth = range.getBoundingClientRect().width;
+    range.detach?.();
+    if (textWidth > available) {
+      const fittedSize = Math.min(baseSize, Math.max(12, baseSize * available / textWidth));
+      element.style.setProperty("font-size", `${fittedSize}px`, "important");
+    }
+  }
+
   const adapter = Object.freeze({
     contractVersion: 2,
     privateSelectors: Object.freeze([
@@ -37,6 +67,9 @@
       const label = String(source || "").trim();
       return Object.prototype.hasOwnProperty.call(hebrewControlLabels, label)
         ? hebrewControlLabels[label] : translation;
+    },
+    formatTranslatedElement(element, original) {
+      fitTranslatedStatLabel(element, original);
     }
   });
 

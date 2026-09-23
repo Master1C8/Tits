@@ -35,6 +35,9 @@ translation request. Machine-generated output is not an editor-reviewed static
 localization. Provider failures must not clear or break the game screen.
 In Hebrew, the Ausar, Kaithrit, Leithan, Gryvain, and Suula choice buttons use
 Hebrew script even when a translation service preserves their Latin names.
+Long translated stat labels shrink to fit the game's narrow sidebar bars. If a
+label is still too long to remain legible, the bar clips it rather than letting
+it overlap the numeric value.
 
 If the panel does not appear, close TiTS completely and launch it through the
 translator again. Keep the whole Windows package together; do not move only the

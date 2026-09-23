@@ -927,7 +927,8 @@
 
   const TRANSLATION_STYLE_PROPERTIES = [
     "direction", "unicode-bidi", "text-align", "overflow-wrap", "word-break",
-    "line-break", "line-height", "white-space", "height", "min-height", "font-family"
+    "line-break", "line-height", "white-space", "height", "min-height", "font-family",
+    "display", "max-width", "overflow", "text-overflow", "font-size"
   ];
 
   function capturePresentation(element) {
@@ -947,7 +948,8 @@
       attributes,
       styles,
       minimumHeight: Math.ceil(element.getBoundingClientRect().height || 0),
-      computedFontFamily: getComputedStyle(element).fontFamily
+      computedFontFamily: getComputedStyle(element).fontFamily,
+      computedFontSize: getComputedStyle(element).fontSize
     };
     originalPresentation.set(element, state);
     return state;
@@ -1028,6 +1030,9 @@
       element.style.setProperty("direction", "rtl", "important");
       element.style.setProperty("unicode-bidi", "plaintext", "important");
       element.style.setProperty("text-align", "start", "important");
+    }
+    if (typeof adapter.formatTranslatedElement === "function") {
+      adapter.formatTranslatedElement(element, original);
     }
   }
 
@@ -2512,6 +2517,20 @@
     for (const element of visibleTranslationContainers) queueTranslationContainer(element);
     scheduleAutoTranslation(80);
   });
+  if (typeof adapter.formatTranslatedElement === "function") {
+    let reflowFrame = 0;
+    addEventListener("resize", () => {
+      if (reflowFrame) cancelAnimationFrame(reflowFrame);
+      reflowFrame = requestAnimationFrame(() => {
+        reflowFrame = 0;
+        if (settings.mode !== "translated") return;
+        for (const element of formattedElements) {
+          const original = originalPresentation.get(element);
+          if (element.isConnected && original) adapter.formatTranslatedElement(element, original);
+        }
+      });
+    }, { passive: true });
+  }
 
   registerTranslationContainers(document.body);
 

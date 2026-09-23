@@ -36,3 +36,33 @@ test("Hebrew species choice labels use Hebrew script without changing other cont
   assert.equal(adapter.normalizeControlTranslation("Ausar", "Ausar", "ru"), "Ausar");
   assert.equal(adapter.normalizeControlTranslation("Human", "אנושי", "he"), "אנושי");
 });
+
+test("translated stat labels reserve room for values and shrink before clipping", () => {
+  const properties = new Map();
+  const label = {
+    matches: (selector) => selector === ".statBarContainer > .statText",
+    style: { setProperty: (name, value, priority) => properties.set(name, [value, priority]) }
+  };
+  const value = { getBoundingClientRect: () => ({ width: 30 }) };
+  label.parentElement = {
+    querySelector: () => value,
+    getBoundingClientRect: () => ({ width: 150 })
+  };
+  const previousDocument = global.document;
+  global.document = { createRange: () => ({
+    selectNodeContents: () => {},
+    getBoundingClientRect: () => ({ width: 180 }),
+    detach: () => {}
+  }) };
+  try {
+    adapter.formatTranslatedElement(label, { computedFontSize: "24px" });
+    assert.deepEqual(properties.get("max-width"), ["calc(100% - 36px)", "important"]);
+    assert.deepEqual(properties.get("white-space"), ["nowrap", "important"]);
+    assert.deepEqual(properties.get("overflow"), ["hidden", "important"]);
+    assert.deepEqual(properties.get("text-overflow"), ["ellipsis", "important"]);
+    assert.deepEqual(properties.get("font-size"), [`${24 * 114 / 180}px`, "important"]);
+  } finally {
+    if (previousDocument === undefined) delete global.document;
+    else global.document = previousDocument;
+  }
+});

@@ -54,8 +54,14 @@ Shared technical evidence:
   VN Revival configuration requests and records them accurately in translation
   diagnostics. A mocked capture test now exercises every catalog locale and
   confirms the full 31-file manifest; a separate test covers the `es-419`
-  configuration request. The full suite and both package checks passed. This
-  package has not yet been exercised in a live game batch.
+  configuration request. The full suite and both package checks passed. Five
+  live 31-language batches subsequently completed automated capture, but visual
+  review found stat-label overlap and other defects; capture success is not a
+  visual pass.
+- The TiTS stat-bar presentation now shrinks translated labels within the
+  available space and clips only when they still cannot fit, keeping numeric
+  values visible. Unit and browser smoke checks passed. The existing 0.1.3
+  screenshots predate this change; live visual recapture is pending.
 - The measured 2026-09-23 model-usage snapshot is recorded in
   `docs/MODEL_USAGE_AUDIT.md` and `data/model-usage-2026-09-23.json`. Production
   sync is pending: the guarded site CLI stopped before dry-run because the

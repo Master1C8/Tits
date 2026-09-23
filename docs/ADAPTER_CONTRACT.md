@@ -19,6 +19,9 @@ tooltip categories, context containers, `getGameVersion(window)`, and
 translation, language)` hook can enforce a game-specific label after a provider
 response; it must leave unrelated controls unchanged. The adapter must preserve
 existing DOM elements, React handlers, links, form values, and save surfaces.
+An optional `formatTranslatedElement(element, originalPresentation)` hook may
+adjust game-specific presentation after text replacement; every inline style it
+changes must be tracked and restored by the shared runtime.
 
 The observed TiTS 0.9.165 surfaces include `.mainTextContainer`, `.mainText`,
 `.combatOutput`, `.tooltipWrapper`, `.tooltipBody`, `.mailText`, controls, and
