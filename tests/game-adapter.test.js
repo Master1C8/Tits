@@ -40,9 +40,11 @@ test("selected DOM adapter satisfies contract version 2", () => {
   }
 });
 
-test("ambiguous menu credits get a context distinct from currency", () => {
-  assert.match(adapter.describeTranslationContext("Credits", "control",
-    ["New Game", "Data", "Options"], null), /staff acknowledgments/);
+test("menu context describes location without supplying a label-specific answer", () => {
+  for (const label of ["Credits", "Extras", "Profile"]) {
+    assert.equal(adapter.describeTranslationContext(label, "control",
+      ["New Game", "Data", "Options"], null), "main menu navigation");
+  }
   assert.equal(adapter.describeTranslationContext("Credits", "control",
     ["Buy", "Sell", "Balance"], null), "");
 });

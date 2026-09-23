@@ -122,6 +122,14 @@ Shared technical evidence:
   cache keys, including with Google. Google's text-only endpoint receives no
   separate context field. The full suite and signed app-only macOS build passed
   on 2026-09-24; live game recapture/editorial review is pending.
+- The bundled AI prompt no longer includes a worked `Credits` answer. It now
+  directs sense selection from context and handles insufficient evidence
+  without inventing a meaning. TiTS supplies a general main-menu location hint
+  instead of label-specific answer text, and the appended glossary instruction
+  applies mappings only to matching senses. Existing installations migrate the
+  exact previous bundled default while preserving user-authored prompts.
+  Automated checks cover the prompt and request context; live translation
+  quality remains unverified.
 
 | Locale | Phase | Glossary | Editorial | Fonts | Textures | Build | Runtime | Visual | Release | Blocker / next action |
 |---|---|---|---|---|---|---|---|---|---|---|

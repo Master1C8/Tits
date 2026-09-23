@@ -98,7 +98,8 @@ window.runOptimizationSmoke = async function (shadow) {
     change(".openAICompatibleGlossary", "Choice 12 = Двенадцать\nAbsent term = Другое");
     await api.translateScreen();
     checks.relevantGlossaryOnlyRetranslatesAffected = requests.length === 3 && requests[2].text === "Choice 12"
-      && requests[2].systemPrompt.includes("Choice 12 = Двенадцать") && !requests[2].systemPrompt.includes("Absent term");
+      && requests[2].systemPrompt.includes("Choice 12 = Двенадцать") && !requests[2].systemPrompt.includes("Absent term")
+      && requests[2].systemPrompt.includes("only when the source term has the mapped sense in this context");
     change(".openAICompatibleGlossary", "Use formal address");
     await api.translateScreen();
     checks.freeformGlossaryPreserved = requests.length === 4 && requests[3].systemPrompt.includes("Use formal address");
@@ -178,10 +179,9 @@ window.runOptimizationSmoke = async function (shadow) {
     creditsButton.textContent = "Credits";
     area.append(creditsButton);
     await api.translateScreen();
-    checks.menuCreditsGetsStaffContext = requests.at(-1).text === "Credits"
-      && requests.at(-1).context.includes(
-      "location: main menu navigation; Credits opens staff acknowledgments, not currency"
-      );
+    checks.menuCreditsGetsLocationContext = requests.at(-1).text === "Credits"
+      && requests.at(-1).context.includes("location: main menu navigation")
+      && !requests.at(-1).context.includes("staff acknowledgments");
     const currencyStart = requests.length;
     show(["Buy", "Balance", "Credits"]);
     await api.translateScreen();

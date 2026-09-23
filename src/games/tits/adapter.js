@@ -86,11 +86,9 @@
     hasSourceText(value, core) {
       return core.hasEnglishText(value);
     },
-    describeTranslationContext(source, kind, nearby, node) {
-      const label = String(source || "").trim();
-      if (kind === "control" && label === "Credits"
-          && nearby.includes("New Game") && nearby.includes("Options")) {
-        return "main menu navigation; Credits opens staff acknowledgments, not currency";
+    describeTranslationContext(_source, kind, nearby, node) {
+      if (kind === "control" && nearby.includes("New Game") && nearby.includes("Options")) {
+        return "main menu navigation";
       }
       const element = node?.parentElement;
       if (element?.closest(".combatOutput")) return "combat log";

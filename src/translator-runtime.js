@@ -49,6 +49,9 @@
   const OPENAI_COMPATIBLE_TRANSLATION_VERBOSITY = OPENAI_CONFIG.translationVerbosity;
   const OPENAI_COMPATIBLE_MANUAL_MODEL_VALUE = OPENAI_CONFIG.manualModelValue;
   const OPENAI_COMPATIBLE_DEFAULT_SYSTEM_PROMPT = OPENAI_CONFIG.defaultSystemPrompt;
+  // Recognize the exact previous bundled default so an app update does not
+  // mistake it for a user-authored prompt. Length guards the short fingerprint.
+  const LEGACY_DEFAULT_PROMPTS = Object.freeze([{ length: 852, fingerprint: "64f3dacd" }]);
   const SITE_TRANSLATION_CONFIG_MAX_GLOSSARY_CHARS = 64000;
   const SITE_TRANSLATION_CONFIG_RETRY_MS = 60000;
   const OPENAI_COMPATIBLE_PRESETS = OPENAI_CONFIG.presets;
@@ -229,6 +232,12 @@
       ? source.openAICompatiblePreset : defaults.openAICompatiblePreset;
     const customBaseURL = typeof source.openAICompatibleBaseURL === "string"
       && source.openAICompatibleBaseURL.length <= 2048 ? source.openAICompatibleBaseURL.trim() : "";
+    const savedPrompt = typeof source.openAICompatibleSystemPrompt === "string"
+      && source.openAICompatibleSystemPrompt.trim()
+      && source.openAICompatibleSystemPrompt.length <= OPENAI_COMPATIBLE_MAX_SYSTEM_PROMPT_CHARS
+      ? source.openAICompatibleSystemPrompt.trim() : "";
+    const legacyDefault = LEGACY_DEFAULT_PROMPTS.some((entry) => savedPrompt.length === entry.length
+      && core.fingerprint(savedPrompt) === entry.fingerprint);
     return {
       language: LANGUAGES.some(([code]) => code === source.language) ? source.language : defaults.language,
       translateInterface: typeof source.translateInterface === "boolean" ? source.translateInterface : defaults.translateInterface,
@@ -240,10 +249,8 @@
         ? customBaseURL : OPENAI_COMPATIBLE_PRESETS[openAICompatiblePreset].baseURL,
       openAICompatibleModel: typeof source.openAICompatibleModel === "string"
         && source.openAICompatibleModel.length <= 512 ? source.openAICompatibleModel.trim() : "",
-      openAICompatibleSystemPrompt: typeof source.openAICompatibleSystemPrompt === "string"
-        && source.openAICompatibleSystemPrompt.trim()
-        && source.openAICompatibleSystemPrompt.length <= OPENAI_COMPATIBLE_MAX_SYSTEM_PROMPT_CHARS
-        ? source.openAICompatibleSystemPrompt.trim() : defaults.openAICompatibleSystemPrompt,
+      openAICompatibleSystemPrompt: savedPrompt && !legacyDefault
+        ? savedPrompt : defaults.openAICompatibleSystemPrompt,
       openAICompatibleGlossary: typeof source.openAICompatibleGlossary === "string"
         && source.openAICompatibleGlossary.length <= OPENAI_COMPATIBLE_MAX_GLOSSARY_CHARS
         ? source.openAICompatibleGlossary.trim() : defaults.openAICompatibleGlossary,
@@ -337,7 +344,7 @@
     const userGlossary = String(settings.openAICompatibleGlossary || "").trim();
     const glossary = mergeGlossaryLayers(siteGlossary, userGlossary);
     const requestSystemPrompt = glossary
-      ? `${systemPrompt}\n\nTranslation glossary. Apply these mappings consistently whenever the source term occurs:\n${glossary}`
+      ? `${systemPrompt}\n\nTranslation glossary. Use each mapping only when the source term has the mapped sense in this context; do not force a mapping onto a different meaning:\n${glossary}`
       : systemPrompt;
     return {
       preset,
@@ -369,7 +376,7 @@
       core.selectGlossary(source, connection.userGlossary)
     );
     return { ...connection, glossary, requestSystemPrompt: glossary
-      ? `${connection.systemPrompt}\n\nTranslation glossary. Apply these mappings consistently whenever the source term occurs:\n${glossary}`
+      ? `${connection.systemPrompt}\n\nTranslation glossary. Use each mapping only when the source term has the mapped sense in this context; do not force a mapping onto a different meaning:\n${glossary}`
       : connection.systemPrompt };
   }
 

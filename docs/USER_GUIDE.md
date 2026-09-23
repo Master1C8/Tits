@@ -47,8 +47,10 @@ OpenAI-compatible translation now receives the visible fragment's UI role,
 semantic location, and nearby source text as disambiguation hints. The hints
 are not translated or displayed. Google does not accept a separate system
 prompt, so it continues to translate the source text directly. Short control
-labels use context-aware cache entries, preventing a main-menu `Credits`
-translation from being reused as a currency label.
+labels use context-aware cache entries, preventing translations from one
+control location from being reused at another. The bundled AI prompt asks the
+model to infer ambiguous terms from context instead of memorizing example
+answers; glossary mappings apply only when their meaning fits that context.
 Long translated stat labels shrink to fit the game's narrow sidebar bars. If a
 label is still too long to remain legible, the bar clips it rather than letting
 it overlap the numeric value.

@@ -231,6 +231,9 @@
     && openAIPromptToggle.textContent === "Hide system prompt"
     && openAIPromptToggle.getAttribute("aria-expanded") === "true";
   const openAIPromptInput = shadow.querySelector(".openAICompatiblePrompt");
+  const oldDefaultPromptMigrated = JSON.parse(localStorage.getItem("tits-translator.settings.v2") || "null")
+    ?.openAICompatibleSystemPrompt === window.VNRevivalOpenAICompatibleConfig.defaultSystemPrompt
+    && !openAIPromptInput.value.includes("Credits in a main menu");
   const openAIPromptEditable = openAIPromptInput.value.includes("{targetName}")
     && openAIPromptInput.value.includes("VRCTXSEP<number>X")
     && !!shadow.querySelector(".openAICompatiblePromptReset");
@@ -990,6 +993,7 @@
     openAIAdvancedClosedByButton,
     openAIPromptInitiallyCollapsed,
     openAIPromptOpenedByButton,
+    oldDefaultPromptMigrated,
     openAIPromptEditable,
     openAIPromptSaved,
     openAIPromptClosedByButton,

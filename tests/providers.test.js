@@ -14,6 +14,13 @@ test("generated OpenAI-compatible config matches its canonical JSON source", () 
   assert.deepEqual(globalThis.VNRevivalOpenAICompatibleConfig, expected);
 });
 
+test("default translation prompt resolves senses from context without answer examples", () => {
+  const prompt = globalThis.VNRevivalOpenAICompatibleConfig.defaultSystemPrompt;
+  assert.match(prompt, /intended sense of ambiguous words/);
+  assert.match(prompt, /context takes precedence over a conflicting glossary mapping/);
+  assert.doesNotMatch(prompt, /\bCredits\b|staff acknowledgments|currency/i);
+});
+
 test("provider registry exposes a stable extension contract", () => {
   assert.equal(registry.contractVersion, 1);
   assert.deepEqual(registry.list.map(({ id }) => id), ["google", "openai-compatible"]);
