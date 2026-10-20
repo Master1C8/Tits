@@ -1,5 +1,8 @@
 # TiTS Translator
 
+[Published Windows and macOS packages with build evidence](https://github.com/Master1C8/Tits/releases/tag/release-0.1.4-66988afff8cf).
+See [release verification](docs/release-verification.md) for hashes and the exact build commit.
+
 Real-time desktop translator for the public Electron build of **Trials in
 Tainted Space**. It reuses the proven VN Revival CoC2 translator runtime while
 keeping TiTS identity, DOM selectors, launch behavior, settings, and cache in a
